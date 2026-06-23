@@ -1,0 +1,23 @@
+diff --git a/backend/api/doctor/routes.py b/backend/api/doctor/routes.py
+index 5a6a6fd..b7d30db 100644
+--- a/backend/api/doctor/routes.py
++++ b/backend/api/doctor/routes.py
+@@ -502,4 +502,16 @@ def update_doctor_profile():
+ 
+     db.session.commit()
+ 
+-    return jsonify({"message": "Profile updated successfully"})
+\ No newline at end of file
++    return jsonify({"message": "Profile updated successfully"})
++@doctor_bp.route("/schedule", methods=["GET"])
++@jwt_required()
++def doctor_schedule():
++    user = get_current_user()
++    if not user or user.role != "doctor":
++        return jsonify({"error": "Doctor access required"}), 403
++    doctor = Doctor.query.filter_by(uuid=user.id).first()
++    if not doctor:
++        return jsonify({"error": "Doctor profile not found"}), 404
++    slots = DoctorAvailability.query.filter_by(doctor_id=doctor.id).all()
++    result = [{"day": s.day, "start": str(s.start_time), "end": str(s.end_time)} for s in slots]
++    return jsonify(result), 200

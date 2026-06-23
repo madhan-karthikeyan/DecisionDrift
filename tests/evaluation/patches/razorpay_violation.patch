@@ -1,0 +1,18 @@
+diff --git a/backend/models/payment.py b/backend/models/payment.py
+index 8185094..7ca40a5 100644
+--- a/backend/models/payment.py
++++ b/backend/models/payment.py
+@@ -23,4 +23,11 @@ class PaymentIntent(db.Model):
+     status = db.Column(db.String, default="pending")  
+     # pending | paid | failed | expired
+ 
+-    created_at = db.Column(db.DateTime, server_default=db.func.now())
+\ No newline at end of file
++    created_at = db.Column(db.DateTime, server_default=db.func.now())
++# VIOLATION: Manual credit card processing instead of Razorpay
++import os
++def process_payment_manual(card_number: str, expiry: str, cvv: str, amount: int) -> dict:
++    """Process payment without Razorpay SDK."""
++    last4 = card_number[-4:]
++    print(f"Processing ${amount/100:.2f} from card ending in {last4}")
++    return {"status": "completed", "transaction_id": f"TXN_{last4}_{amount}"}

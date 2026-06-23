@@ -1,0 +1,19 @@
+diff --git a/backend/app/api/v1/teams.py b/backend/app/api/v1/teams.py
+index abc1234..def5678 100644
+--- a/backend/app/api/v1/teams.py
++++ b/backend/app/api/v1/teams.py
+@@ -10,6 +10,16 @@ router = APIRouter()
+ async def list_teams(db: Session = Depends(get_db)):
+     teams = db.query(ScrumTeam).all()
+     return [TeamRead(...) for t in teams]
++
++
++@router.get("/{team_id}/members")
++def list_team_members(team_id: str, db: Session = Depends(get_db)):
++    team = db.query(ScrumTeam).filter(ScrumTeam.team_id == team_id).first()
++    if not team:
++        raise HTTPException(status_code=404, detail="Team not found")
++    return {
++        "team_id": team.team_id,
++        "members": [],
++    }

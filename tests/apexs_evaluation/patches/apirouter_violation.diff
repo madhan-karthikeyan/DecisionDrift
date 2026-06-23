@@ -1,0 +1,21 @@
+diff --git a/backend/app/api/v1/users.py b/backend/app/api/v1/users.py
+index abc123..def456 100644
+--- a/backend/app/api/v1/users.py
++++ b/backend/app/api/v1/users.py
+@@ -1,8 +1,8 @@
+-from fastapi import APIRouter, Depends
++from fastapi import FastAPI, Depends
+ from app.models.user import User
+
+-router = APIRouter(prefix="/api/v1/users")
++app = FastAPI()
+ 
+-@router.get("/")
++@app.get("/api/v1/users")
+ def list_users():
+     return [{"id": 1, "name": "Alice"}]
+ 
+-@router.post("/")
++@app.post("/api/v1/users")
+ def create_user():
+     return {"id": 2, "name": "Bob"}

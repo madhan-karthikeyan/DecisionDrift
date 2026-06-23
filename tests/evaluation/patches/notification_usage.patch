@@ -1,0 +1,21 @@
+diff --git a/backend/tasks/reminder_tasks.py b/backend/tasks/reminder_tasks.py
+index 5c628fd..71badc2 100644
+--- a/backend/tasks/reminder_tasks.py
++++ b/backend/tasks/reminder_tasks.py
+@@ -153,3 +153,16 @@ def send_daily_reminders():
+ 
+     logger.info("Daily reminders complete: %s", stats)
+     return stats
++
++def send_appointment_reminder(appointment_id):
++    from backend.utils.notifications import send_email
++    from backend.models.appointment import Appointment
++    appt = Appointment.query.get(appointment_id)
++    if not appt or not appt.patient:
++        return False
++    send_email(
++        to=appt.patient.email,
++        subject="Appointment Reminder",
++        html_body=f"<p>Reminder for {appt.date}</p>",
++    )
++    return True

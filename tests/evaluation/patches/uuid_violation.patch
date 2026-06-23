@@ -1,0 +1,16 @@
+diff --git a/backend/models/payment.py b/backend/models/payment.py
+index 8185094..6e3a6fa 100644
+--- a/backend/models/payment.py
++++ b/backend/models/payment.py
+@@ -23,4 +23,9 @@ class PaymentIntent(db.Model):
+     status = db.Column(db.String, default="pending")  
+     # pending | paid | failed | expired
+ 
+-    created_at = db.Column(db.DateTime, server_default=db.func.now())
+\ No newline at end of file
++    created_at = db.Column(db.DateTime, server_default=db.func.now())
++# VIOLATION: Integer autoincrement PK instead of UUID
++class PaymentRecord(db.Model):
++    __tablename__ = "payment_records"
++    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
++    amount = db.Column(db.Float, nullable=False)

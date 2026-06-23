@@ -1,0 +1,21 @@
+diff --git a/backend/models/medication.py b/backend/models/medication.py
+index 04b48fe..dddbe4d 100644
+--- a/backend/models/medication.py
++++ b/backend/models/medication.py
+@@ -16,3 +16,16 @@ class Medication(db.Model):
+     duration = db.Column(db.String(255), nullable=True)
+ 
+     treatment = db.relationship('Treatment', back_populates='medications')
++
++
++
++class Prescription(db.Model):
++    __tablename__ = "prescriptions"
++    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
++    patient_id = db.Column(db.String(36), db.ForeignKey('patients.id'), nullable=False)
++    medication_id = db.Column(db.String(36), db.ForeignKey('medications.id'), nullable=False)
++    dosage = db.Column(db.String(50), nullable=False)
++    prescribed_date = db.Column(db.DateTime, default=db.func.now())
++
++    patient = db.relationship("Patient", backref="prescriptions")
++    medication = db.relationship("Medication", backref="prescriptions")

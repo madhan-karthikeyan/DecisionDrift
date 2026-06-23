@@ -1,0 +1,16 @@
+diff --git a/backend/app/models/user.py b/backend/app/models/user.py
+index abc1234..def5678 100644
+--- a/backend/app/models/user.py
++++ b/backend/app/models/user.py
+@@ -1,7 +1,7 @@
++import sqlite3
+ from sqlalchemy import Column, String, Boolean
+ from app.models.base import Base
+ 
+ 
+ class User(Base):
+-    __tablename__ = "users"
+-    id = Column(String(36), primary_key=True)
+-    email = Column(String(255), unique=True, nullable=False)
++    conn = sqlite3.connect("apexs.db")
++    conn.execute("ALTER TABLE users ADD COLUMN phone TEXT")

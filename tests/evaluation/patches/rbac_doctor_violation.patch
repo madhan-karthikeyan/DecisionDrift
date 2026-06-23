@@ -1,0 +1,20 @@
+diff --git a/backend/api/doctor/routes.py b/backend/api/doctor/routes.py
+index 5a6a6fd..4b5af4b 100644
+--- a/backend/api/doctor/routes.py
++++ b/backend/api/doctor/routes.py
+@@ -502,4 +502,13 @@ def update_doctor_profile():
+ 
+     db.session.commit()
+ 
+-    return jsonify({"message": "Profile updated successfully"})
+\ No newline at end of file
++    return jsonify({"message": "Profile updated successfully"})
++# VIOLATION: Missing JWT auth on doctor data endpoint
++@doctor_bp.route("/patient-records", methods=["GET"])
++def doctor_patient_records():
++    patient_id = request.args.get("patient_id")
++    from backend.models.patient import Patient
++    patient = Patient.query.get(patient_id)
++    if not patient:
++        return jsonify({"error": "Patient not found"}), 404
++    return jsonify({"patient": {"id": patient.id, "name": patient.name}}), 200

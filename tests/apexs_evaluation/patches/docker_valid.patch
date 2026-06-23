@@ -1,0 +1,14 @@
+diff --git a/backend/app/core/docker_config.py b/backend/app/core/docker_config.py
+index abc1234..def5678 100644
+--- a/backend/app/core/docker_config.py
++++ b/backend/app/core/docker_config.py
+@@ -1,4 +1,8 @@
+ from docker import DockerClient
+ 
+ 
+ def get_client() -> DockerClient:
+     return DockerClient.from_env()
++
++
++def build_image(tag: str) -> str:
++    return DockerClient.from_env().images.build(tag=tag)

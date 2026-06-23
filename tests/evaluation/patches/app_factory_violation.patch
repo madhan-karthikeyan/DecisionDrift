@@ -1,0 +1,17 @@
+diff --git a/backend/api/public/routes.py b/backend/api/public/routes.py
+index 74a2740..92b83a2 100644
+--- a/backend/api/public/routes.py
++++ b/backend/api/public/routes.py
+@@ -89,4 +89,10 @@ def get_public_doctors():
+     if redis:
+         redis.setex(cache_key, Config.REDIS_CACHE_EXPIRE, json.dumps(result))
+ 
+-    return jsonify(result), 200
+\ No newline at end of file
++    return jsonify(result), 200
++# VIOLATION: Module-level Flask app instead of app factory
++from flask import Flask
++alt_app = Flask(__name__)
++@alt_app.route("/health")
++def health():
++    return {"status": "ok"}

@@ -1,0 +1,18 @@
+diff --git a/backend/tasks/export_tasks.py b/backend/tasks/export_tasks.py
+index 223c283..882de25 100644
+--- a/backend/tasks/export_tasks.py
++++ b/backend/tasks/export_tasks.py
+@@ -157,3 +157,13 @@ def export_patient_treatment_history(self, patient_id):
+         )
+ 
+     return {"file": filename, "rows": rows_written}
++
++@celery.task(name="backend.tasks.export_tasks.export_patient_history")
++def export_patient_history(patient_id):
++    from backend.models.patient import Patient
++    from backend.utils.notifications import send_email
++    patient = Patient.query.get(patient_id)
++    if not patient:
++        return {"status": "error", "error": "Patient not found"}
++    report = {"patient_id": patient_id, "history": []}
++    return {"status": "completed", "report": report}

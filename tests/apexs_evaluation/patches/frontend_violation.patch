@@ -1,0 +1,27 @@
+diff --git a/backend/app/main.py b/backend/app/main.py
+index abc1234..def5678 100644
+--- a/backend/app/main.py
++++ b/backend/app/main.py
+@@ -9,7 +9,6 @@ from app.api.v1 import auth, teams, datasets, sprints, stories, plans, reports
+ from app.api.v1.context import router as context_router
+ from app.core.config import settings, get_cors_origins
+ from app.core.database import Base, engine
+-from app.core.minio_client import ensure_bucket
+ from app.models.team import ScrumTeam
+ from app.workers.planning_task import celery_app
+ 
+@@ -82,3 +81,14 @@ def root():
+ @app.get("/health")
+ def health():
+     return {"status": "ok"}
++
++
++@app.get("/dashboard")
++def dashboard():
++    return """<!DOCTYPE html>
++<html>
++<head><title>ApexS Dashboard</title></head>
++<body>
++<h1>Dashboard</h1>
++</body>
++</html>"""

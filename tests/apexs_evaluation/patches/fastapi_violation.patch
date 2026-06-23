@@ -1,0 +1,29 @@
+diff --git a/backend/app/main.py b/backend/app/main.py
+index abc1234..def5678 100644
+--- a/backend/app/main.py
++++ b/backend/app/main.py
+@@ -4,8 +4,8 @@ import logging
+ import time
+ 
+-from fastapi import FastAPI
+-from fastapi.middleware.cors import CORSMiddleware
++from flask import Flask
++from flask_cors import CORS
+ from sqlalchemy import text
+ 
+ from app.api.v1 import auth, teams, datasets, sprints, stories, plans, reports
+@@ -20,11 +20,11 @@ try:
+ except Exception:  # pragma: no cover
+     redis = None
+ 
+-app = FastAPI(title="Explainable Sprint Planner API", version="1.0.0")
++app = Flask(__name__)
+ logger = logging.getLogger("apexs.api")
+ 
+-app.add_middleware(
+-    CORSMiddleware,
+-    allow_origins=get_cors_origins(),
++CORS(app)
+ 
+ @app.get("/")
+ def root():

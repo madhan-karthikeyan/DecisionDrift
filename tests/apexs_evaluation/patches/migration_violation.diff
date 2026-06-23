@@ -1,0 +1,18 @@
+diff --git a/backend/app/models/user.py b/backend/app/models/user.py
+index abc123..def456 100644
+--- a/backend/app/models/user.py
++++ b/backend/app/models/user.py
+@@ -1,8 +1,8 @@
+-from alembic import op
+-import sqlalchemy as sa
++import sqlite3
+
+-def upgrade():
+-    op.add_column("users", sa.Column("phone", sa.String(20), nullable=True))
++def migrate():
++    conn = sqlite3.connect("app.db")
++    conn.execute("ALTER TABLE users ADD COLUMN phone TEXT")
+ 
+-def downgrade():
+-    op.drop_column("users", "phone")
++    conn.close()

@@ -1,0 +1,23 @@
+diff --git a/backend/app/main.py b/backend/app/main.py
+index abc123..def456 100644
+--- a/backend/app/main.py
++++ b/backend/app/main.py
+@@ -1,10 +1,10 @@
+-from fastapi import FastAPI, APIRouter
+-from fastapi.middleware.cors import CORSMiddleware
++from flask import Flask
++from flask_cors import CORS
+
+-app = FastAPI(title="ApexS API", version="1.0.0")
++app = Flask(__name__)
+
+-app.add_middleware(
+-    CORSMiddleware,
+-    allow_origins=["*"],
+-)
++CORS(app)
+
+-@app.get("/health")
++@app.route("/health")
+ def health():
+     return {"status": "ok"}

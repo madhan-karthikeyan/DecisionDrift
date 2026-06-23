@@ -1,0 +1,180 @@
+patches:
+  # --- Violations (13) ---
+  sqlalchemy_violation:
+    file: sqlalchemy_violation.patch
+    description: "Raw sqlite3 usage in model file instead of SQLAlchemy ORM"
+    expected_adrs:
+      - ADR-0002
+      - ADR-0008
+    expected_classification: violates
+    expected_severity: critical
+    skip_classification: false
+
+  jwt_violation:
+    file: jwt_violation.patch
+    description: "Public endpoint exposing sensitive patient data without JWT"
+    expected_adrs:
+      - ADR-0003
+    expected_classification: violates
+    expected_severity: critical
+
+  celery_violation:
+    file: celery_violation.patch
+    description: "Synchronous blocking call instead of async Celery task"
+    expected_adrs:
+      - ADR-0005
+    expected_classification: violates
+    expected_severity: high
+
+  rbac_violation:
+    file: rbac_violation.patch
+    description: "Doctor endpoint accessing system config without admin role check"
+    expected_adrs:
+      - ADR-0007
+      - ADR-0004
+    expected_classification: violates
+    expected_severity: high
+
+  redis_violation:
+    file: redis_violation.patch
+    description: "In-memory dict cache instead of Redis cache utilities"
+    expected_adrs:
+      - ADR-0006
+    expected_classification: violates
+    expected_severity: medium
+
+  notification_violation:
+    file: notification_violation.patch
+    description: "print() instead of Celery email dispatch via notifications"
+    expected_adrs:
+      - ADR-0009
+      - ADR-0005
+    expected_classification: violates
+    expected_severity: high
+
+  razorpay_violation:
+    file: razorpay_violation.patch
+    description: "Manual credit card processing instead of Razorpay SDK"
+    expected_adrs:
+      - ADR-0010
+    expected_classification: violates
+    expected_severity: critical
+
+  celery_beat_violation:
+    file: celery_beat_violation.patch
+    description: "time.sleep polling loop instead of Celery Beat schedule"
+    expected_adrs:
+      - ADR-0011
+      - ADR-0005
+    expected_classification: violates
+    expected_severity: high
+
+  app_factory_violation:
+    file: app_factory_violation.patch
+    description: "Module-level Flask() app instead of create_app() factory"
+    expected_adrs:
+      - ADR-0012
+      - ADR-0001
+    expected_classification: violates
+    expected_severity: high
+
+  flask_framework_violation:
+    file: flask_framework_violation.patch
+    description: "Raw http.server BaseHTTPRequestHandler instead of Flask"
+    expected_adrs:
+      - ADR-0001
+    expected_classification: violates
+    expected_severity: critical
+
+  uuid_violation:
+    file: uuid_violation.patch
+    description: "Integer autoincrement PK instead of UUID primary key"
+    expected_adrs:
+      - ADR-0008
+    expected_classification: violates
+    expected_severity: high
+
+  blueprint_violation:
+    file: blueprint_violation.patch
+    description: "Routes attached directly to Flask app instead of blueprint"
+    expected_adrs:
+      - ADR-0004
+    expected_classification: violates
+    expected_severity: high
+
+  rbac_doctor_violation:
+    file: rbac_doctor_violation.patch
+    description: "Doctor patient-records endpoint missing JWT auth"
+    expected_adrs:
+      - ADR-0003
+      - ADR-0007
+    expected_classification: violates
+    expected_severity: critical
+
+  # --- Non-violations (8) ---
+  clean_change:
+    file: clean_change.patch
+    description: "New SQLAlchemy model class following all conventions"
+    expected_adrs:
+      - ADR-0002
+      - ADR-0008
+    expected_classification: not_applicable
+    expected_severity: null
+
+  redis_valid_usage:
+    file: redis_valid_usage.patch
+    description: "New endpoint using cache_get/cache_set properly"
+    expected_adrs:
+      - ADR-0006
+    expected_classification: not_applicable
+    expected_severity: null
+
+  jwt_valid_change:
+    file: jwt_valid_change.patch
+    description: "New doctor schedule endpoint with @jwt_required"
+    expected_adrs:
+      - ADR-0003
+    expected_classification: not_applicable
+    expected_severity: null
+
+  celery_refactor:
+    file: celery_refactor.patch
+    description: "New Celery task using @celery.task and task.delay()"
+    expected_adrs:
+      - ADR-0005
+    expected_classification: not_applicable
+    expected_severity: null
+
+  rbac_cleanup:
+    file: rbac_cleanup.patch
+    description: "Doctor profile endpoint with proper role checking"
+    expected_adrs:
+      - ADR-0007
+      - ADR-0003
+    expected_classification: not_applicable
+    expected_severity: null
+
+  blueprint_addition:
+    file: blueprint_addition.patch
+    description: "New public FAQ endpoint added to existing blueprint"
+    expected_adrs:
+      - ADR-0004
+    expected_classification: not_applicable
+    expected_severity: null
+
+  notification_usage:
+    file: notification_usage.patch
+    description: "Using notification.send_email for appointment reminders"
+    expected_adrs:
+      - ADR-0009
+    expected_classification: not_applicable
+    expected_severity: null
+
+  factory_usage:
+    file: factory_usage.patch
+    description: "New public route following app factory pattern"
+    expected_adrs:
+      - ADR-0012
+      - ADR-0001
+    expected_classification: not_applicable
+    expected_severity: null

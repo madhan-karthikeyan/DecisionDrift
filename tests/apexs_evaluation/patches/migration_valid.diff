@@ -1,0 +1,20 @@
+diff --git a/migrations/versions/0002_add_phone_column.py b/migrations/versions/0002_add_phone_column.py
+new file mode 100644
+index 0000000..abc1234
+--- /dev/null
++++ b/migrations/versions/0002_add_phone_column.py
+@@ -0,0 +1,18 @@
++"""Add phone column to users"""
++from alembic import op
++import sqlalchemy as sa
++
++revision = "0002"
++down_revision = "0001"
++
++
++def upgrade():
++    op.add_column("users", sa.Column("phone", sa.String(20), nullable=True))
++
++
++def downgrade():
++    op.drop_column("users", "phone")

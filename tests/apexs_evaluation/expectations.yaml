@@ -1,0 +1,74 @@
+patches:
+  # --- Violations (5) ---
+  fastapi_violation:
+    file: fastapi_violation.patch
+    description: "Replaces FastAPI imports with Flask and Flask-CORS"
+    expected_adrs:
+      - ADR-0000
+    expected_classification: violates
+    expected_severity: high
+
+  apirouter_violation:
+    file: apirouter_violation.patch
+    description: "Replaces FastAPI APIRouter with Flask Blueprint"
+    expected_adrs:
+      - ADR-0002
+    expected_classification: violates
+    expected_severity: high
+
+  migration_violation:
+    file: migration_violation.patch
+    description: "Direct sqlite3 ALTER TABLE instead of Alembic migration"
+    expected_adrs:
+      - ADR-0001
+    expected_classification: violates
+    expected_severity: high
+
+  frontend_violation:
+    file: frontend_violation.patch
+    description: "Renders HTML from backend endpoint instead of separate frontend"
+    expected_adrs:
+      - ADR-0003
+    expected_classification: violates
+    expected_severity: medium
+
+  docker_violation:
+    file: docker_violation.patch
+    description: "Replaces Docker SDK with raw subprocess call"
+    expected_adrs:
+      - ADR-0004
+    expected_classification: violates
+    expected_severity: high
+
+  # --- Non-violations (5) ---
+  fastapi_valid:
+    file: fastapi_valid.patch
+    description: "Adds new FastAPI endpoint correctly"
+    expected_adrs:
+      - ADR-0000
+    expected_classification: not_applicable
+    expected_severity: null
+
+  apirouter_valid:
+    file: apirouter_valid.patch
+    description: "Adds new APIRouter endpoint to teams module"
+    expected_adrs:
+      - ADR-0002
+    expected_classification: not_applicable
+    expected_severity: null
+
+  migration_valid:
+    file: migration_valid.patch
+    description: "Adds new SQLAlchemy model class following convention"
+    expected_adrs:
+      - ADR-0001
+    expected_classification: not_applicable
+    expected_severity: null
+
+  docker_valid:
+    file: docker_valid.patch
+    description: "Adds new Docker function using SDK correctly"
+    expected_adrs:
+      - ADR-0004
+    expected_classification: not_applicable
+    expected_severity: null

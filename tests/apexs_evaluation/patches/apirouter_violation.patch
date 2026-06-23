@@ -1,0 +1,17 @@
+diff --git a/backend/app/api/v1/auth.py b/backend/app/api/v1/auth.py
+index abc1234..def5678 100644
+--- a/backend/app/api/v1/auth.py
++++ b/backend/app/api/v1/auth.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from fastapi import APIRouter
++from flask import Blueprint
+ 
+ from app.core.users_fastapi import auth_router, register_router, users_router
+ 
+-router = APIRouter()
++auth_bp = Blueprint("auth", __name__)
+ 
+ @router.post("/logout", response_model=MessageResponse)
+ def logout():

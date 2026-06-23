@@ -1,0 +1,17 @@
+diff --git a/backend/api/doctor/routes.py b/backend/api/doctor/routes.py
+index 5a6a6fd..ec909c7 100644
+--- a/backend/api/doctor/routes.py
++++ b/backend/api/doctor/routes.py
+@@ -502,4 +502,10 @@ def update_doctor_profile():
+ 
+     db.session.commit()
+ 
+-    return jsonify({"message": "Profile updated successfully"})
+\ No newline at end of file
++    return jsonify({"message": "Profile updated successfully"})
++
++# VIOLATION: No role check for admin-level operation
++@doctor_bp.route("/system/config", methods=["GET"])
++@jwt_required()
++def get_system_config():
++    return {"db_host": "localhost", "db_password": "secret"}

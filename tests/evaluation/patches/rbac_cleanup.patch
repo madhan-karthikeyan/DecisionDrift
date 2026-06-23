@@ -1,0 +1,26 @@
+diff --git a/backend/api/doctor/routes.py b/backend/api/doctor/routes.py
+index 5a6a6fd..372e33e 100644
+--- a/backend/api/doctor/routes.py
++++ b/backend/api/doctor/routes.py
+@@ -502,4 +502,19 @@ def update_doctor_profile():
+ 
+     db.session.commit()
+ 
+-    return jsonify({"message": "Profile updated successfully"})
+\ No newline at end of file
++    return jsonify({"message": "Profile updated successfully"})
++@doctor_bp.route("/profile", methods=["GET", "PUT"])
++@jwt_required()
++def doctor_profile():
++    user = get_current_user()
++    if not user or user.role != "doctor":
++        return jsonify({"error": "Doctor access required"}), 403
++    doctor = Doctor.query.filter_by(uuid=user.id).first()
++    if not doctor:
++        return jsonify({"error": "Doctor profile not found"}), 404
++    return jsonify({
++        "name": doctor.name,
++        "specialization": doctor.specialization,
++        "email": doctor.email,
++        "phone": doctor.phone,
++    }), 200

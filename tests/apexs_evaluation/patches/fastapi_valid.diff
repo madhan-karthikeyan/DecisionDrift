@@ -1,0 +1,16 @@
+diff --git a/backend/app/main.py b/backend/app/main.py
+index abc123..def456 100644
+--- a/backend/app/main.py
++++ b/backend/app/main.py
+@@ -1,9 +1,9 @@
+ from fastapi import FastAPI
+ from fastapi.middleware.cors import CORSMiddleware
+-from app.api.v1 import auth, teams, sprints
++from app.api.v1 import auth, teams, sprints, reports
+ 
+ app = FastAPI(title="ApexS API", version="1.0.0")
+ 
+ app.add_middleware(CORSMiddleware, allow_origins=["*"])
+ 
+-app.include_router(auth.router)
++app.include_router(auth.router, prefix="/api/v1")

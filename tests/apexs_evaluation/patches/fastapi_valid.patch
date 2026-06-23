@@ -1,0 +1,19 @@
+diff --git a/backend/app/main.py b/backend/app/main.py
+index abc1234..def5678 100644
+--- a/backend/app/main.py
++++ b/backend/app/main.py
+@@ -45,6 +45,14 @@ app.include_router(reports.router, prefix="/api/v1/reports", tags=["Reports"])
+ app.include_router(context_router, prefix="/api/v1/context", tags=["Context"])
+ 
+ 
++@app.get("/api/v1/config")
++def get_config():
++    return {
++        "app_name": "ApexS Sprint Planner",
++        "version": "1.0.0",
++    }
++
++
+ @app.middleware("http")
+ async def request_log_middleware(request, call_next):
+     global _REQUEST_COUNT

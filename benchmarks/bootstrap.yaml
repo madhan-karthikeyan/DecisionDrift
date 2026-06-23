@@ -1,0 +1,46 @@
+# Bootstrap V2 Benchmark — Regression Suite
+#
+# Repos used to test bootstrap stability, crash rate, and latency.
+# No expected_technologies — this is not a gold standard.
+# See scripts/run_bootstrap_benchmark.py for measurement logic.
+
+repositories:
+  # Python
+  - tiangolo/full-stack-fastapi-template
+  - django/django
+  - saleor/saleor
+  - psf/requests
+  - pallets/click
+  - pytest-dev/pytest
+
+  # Java
+  - spring-projects/spring-petclinic
+  - jhipster/jhipster
+
+  # JavaScript / TypeScript
+  - vercel/next.js
+  - nestjs/nest
+  - strapi/strapi
+
+  # Go
+  - gin-gonic/gin
+  - go-gitea/gitea
+
+  # Rust
+  - tokio-rs/tokio
+  - actix/actix-web
+
+  # Microservices
+  - GoogleCloudPlatform/microservices-demo
+
+  # Infrastructure
+  - kubernetes/kubernetes
+  - argoproj/argo-cd
+  - hashicorp/vault
+
+  # AI/ML
+  - huggingface/transformers
+  - langchain-ai/langchain
+
+  # Monorepo
+  - microsoft/vscode

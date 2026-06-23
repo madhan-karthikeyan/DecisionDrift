@@ -1,0 +1,20 @@
+diff --git a/backend/app/main.py b/backend/app/main.py
+index abc123..def456 100644
+--- a/backend/app/main.py
++++ b/backend/app/main.py
+@@ -5,3 +5,16 @@ from fastapi.middleware.cors import CORSMiddleware
+ from app.api.v1 import auth, teams, sprints
+ 
+ app = FastAPI(title="ApexS API", version="1.0.0")
++
++@app.get("/dashboard")
++def dashboard():
++    return """<!DOCTYPE html>
++<html>
++<head><title>ApexS Dashboard</title></head>
++<body>
++<h1>Dashboard</h1>
++<p>Welcome to ApexS Sprint Planner</p>
++<script src="/app.js"></script>
++</body>
++</html>"""

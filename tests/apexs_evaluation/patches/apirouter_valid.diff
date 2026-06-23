@@ -1,0 +1,16 @@
+diff --git a/backend/app/api/v1/teams.py b/backend/app/api/v1/teams.py
+index abc123..def456 100644
+--- a/backend/app/api/v1/teams.py
++++ b/backend/app/api/v1/teams.py
+@@ -10,6 +10,14 @@ router = APIRouter(prefix="/api/v1/teams")
+ async def list_teams(db: Session = Depends(get_db)):
+     teams = db.query(ScrumTeam).all()
+     return [{"id": t.id, "name": t.name, "size": t.team_size} for t in teams]
++
++
++@router.get("/{team_id}/members")
++async def list_team_members(team_id: int, db: Session = Depends(get_db)):
++    team = db.query(ScrumTeam).filter(ScrumTeam.id == team_id).first()
++    if not team:
++        return {"error": "Team not found"}
++    return {"id": team.id, "name": team.name, "members": []}

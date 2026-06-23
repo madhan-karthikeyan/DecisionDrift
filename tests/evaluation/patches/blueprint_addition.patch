@@ -1,0 +1,16 @@
+diff --git a/backend/api/public/routes.py b/backend/api/public/routes.py
+index 74a2740..d6375ac 100644
+--- a/backend/api/public/routes.py
++++ b/backend/api/public/routes.py
+@@ -89,4 +89,9 @@ def get_public_doctors():
+     if redis:
+         redis.setex(cache_key, Config.REDIS_CACHE_EXPIRE, json.dumps(result))
+ 
+-    return jsonify(result), 200
+\ No newline at end of file
++    return jsonify(result), 200
++@public_bp.route("/faq", methods=["GET"])
++def get_public_faq():
++    return jsonify([
++        {"question": "How to book?", "answer": "Use the booking system"}
++    ]), 200

@@ -1,0 +1,17 @@
+diff --git a/backend/tasks/email_tasks.py b/backend/tasks/email_tasks.py
+index c7292cd..9d68e33 100644
+--- a/backend/tasks/email_tasks.py
++++ b/backend/tasks/email_tasks.py
+@@ -64,3 +64,12 @@ def send_email_async(self, to, subject, html_body, attachments=None):
+         logger.warning("Email task failed (attempt %s/%s): %s",
+                         self.request.retries + 1, self.max_retries + 1, exc)
+         raise self.retry(exc=exc)
++import smtplib
++
++
++# VIOLATION: Blocking call instead of Celery task
++def send_email_sync(to, subject, body):
++    import time
++    time.sleep(2)
++    with smtplib.SMTP("smtp.example.com") as server:
++        server.sendmail("noreply@example.com", [to], body)

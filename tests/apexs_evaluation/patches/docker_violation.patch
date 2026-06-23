@@ -1,0 +1,13 @@
+diff --git a/backend/app/core/docker_config.py b/backend/app/core/docker_config.py
+index abc1234..def5678 100644
+--- a/backend/app/core/docker_config.py
++++ b/backend/app/core/docker_config.py
+@@ -1,5 +1,5 @@
+-from docker import DockerClient
++import subprocess
+ 
+ 
+-def get_client() -> DockerClient:
+-    return DockerClient.from_env()
++def get_client():
++    return subprocess.run(["docker", "run", "--help"], capture_output=True)

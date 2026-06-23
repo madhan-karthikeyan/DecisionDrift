@@ -1,0 +1,43 @@
+name: 'DecisionDrift Review'
+description: 'Decision-aware AI PR review — detects violations of documented architecture decisions.'
+author: 'DecisionDrift'
+branding:
+  icon: 'check-circle'
+  color: 'blue'
+
+inputs:
+  llm-api-key:
+    description: 'API key for the LLM provider (OpenAI / Groq / OpenRouter, or "ollama" for local).'
+    required: false
+  llm-model:
+    description: 'LLM model name (e.g. gpt-4o, llama-3.3-70b-versatile, qwen2.5-coder:7b).'
+    required: false
+    default: 'gpt-4o'
+  llm-base-url:
+    description: 'Base URL for the LLM API (e.g. http://localhost:11434/v1 for Ollama).'
+    required: false
+  adr-dir:
+    description: 'Path to the ADR directory within the repository.'
+    required: false
+    default: 'docs/adr'
+  fail-on-violation:
+    description: 'Fail the CI check when violations are found.'
+    required: false
+    default: 'false'
+  max-pairs:
+    description: 'Maximum number of (ADR, symbol) pairs to classify.'
+    required: false
+    default: '15'
+  similarity-threshold:
+    description: 'Minimum similarity score for a decision to be considered.'
+    required: false
+    default: '0.5'
+  timeout-seconds:
+    description: 'Maximum wall-clock time for the review in seconds.'
+    required: false
+    default: '300'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  entrypoint: ['python', '-m', 'decisiondrift.github.action_entrypoint']

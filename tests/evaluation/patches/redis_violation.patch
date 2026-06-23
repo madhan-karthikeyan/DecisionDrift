@@ -1,0 +1,22 @@
+diff --git a/backend/api/public/routes.py b/backend/api/public/routes.py
+index 74a2740..a1fc20d 100644
+--- a/backend/api/public/routes.py
++++ b/backend/api/public/routes.py
+@@ -89,4 +89,15 @@ def get_public_doctors():
+     if redis:
+         redis.setex(cache_key, Config.REDIS_CACHE_EXPIRE, json.dumps(result))
+ 
+-    return jsonify(result), 200
+\ No newline at end of file
++    return jsonify(result), 200
++# VIOLATION: Using in-memory dict instead of Redis cache
++_inline_cache: dict = {}
++@public_bp.route("/inline-cached-doctors", methods=["GET"])
++def get_doctors_inline_cache():
++    cache_key = "public:doctors:all"
++    if cache_key in _inline_cache:
++        return jsonify(_inline_cache[cache_key]), 200
++    doctors = Doctor.query.filter(Doctor.is_blacklisted == False).all()
++    result = [{"id": d.id, "name": d.name} for d in doctors]
++    _inline_cache[cache_key] = result
++    return jsonify(result), 200

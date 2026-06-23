@@ -1,0 +1,20 @@
+diff --git a/new-service/Dockerfile b/new-service/Dockerfile
+new file mode 100644
+index 0000000..abc1234
+--- /dev/null
++++ b/new-service/Dockerfile
+@@ -0,0 +1 @@
++# no dockerfile needed, run directly
+diff --git a/docker-compose.yml b/docker-compose.yml
+index abc123..def456 100644
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -15,3 +15,8 @@ services:
+       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+     ports:
+       - "5432:5432"
++
++  new-service:
++    build: ./new-service
++    ports:
++      - "3000:3000"

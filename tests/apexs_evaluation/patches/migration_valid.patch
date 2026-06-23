@@ -1,0 +1,16 @@
+diff --git a/backend/app/models/user.py b/backend/app/models/user.py
+index abc1234..def5678 100644
+--- a/backend/app/models/user.py
++++ b/backend/app/models/user.py
+@@ -5,3 +5,10 @@ from app.models.base import Base
+ class User(Base):
+     __tablename__ = "users"
+     id = Column(String(36), primary_key=True)
+     email = Column(String(255), unique=True, nullable=False)
++
++
++class UserSession(Base):
++    __tablename__ = "user_sessions"
++    id = Column(String(36), primary_key=True)
++    user_id = Column(String(36), ForeignKey("users.id"))
++    token = Column(String(255), nullable=False)

@@ -1,0 +1,82 @@
+# Known-good query→expected ADR pairs for HMS-V2 retrieval evaluation.
+# Each query represents a changed symbol or search context that should
+# retrieve the listed ADRs in top-k results.
+
+queries:
+  - symbol_name: User
+    file_path: backend/models/user.py
+    expected_adrs:
+      - ADR-0002  # Use SQLAlchemy ORM
+      - ADR-0008  # Use UUID Primary Keys
+
+  - symbol_name: Doctor
+    file_path: backend/models/doctor.py
+    expected_adrs:
+      - ADR-0002  # Use SQLAlchemy ORM
+      - ADR-0008  # Use UUID Primary Keys
+
+  - symbol_name: create_access_token
+    file_path: backend/api/auth/routes.py
+    expected_adrs:
+      - ADR-0003  # Use JWT Authentication
+
+  - symbol_name: jwt_required
+    file_path: backend/utils/decorators.py
+    expected_adrs:
+      - ADR-0003  # Use JWT Authentication
+      - ADR-0007  # Use RBAC
+
+  - symbol_name: require_admin
+    file_path: backend/utils/decorators.py
+    expected_adrs:
+      - ADR-0007  # Use RBAC
+      - ADR-0003  # Use JWT Authentication
+
+  - symbol_name: celery
+    file_path: backend/tasks/email_tasks.py
+    expected_adrs:
+      - ADR-0005  # Use Celery for Async Tasks
+
+  - symbol_name: send_daily_reminders
+    file_path: backend/tasks/reminder_tasks.py
+    expected_adrs:
+      - ADR-0011  # Use Celery Beat
+      - ADR-0005  # Use Celery for Async Tasks
+      - ADR-0009  # Use Notification Service
+
+  - symbol_name: send_email
+    file_path: backend/utils/notifications.py
+    expected_adrs:
+      - ADR-0009  # Use Notification Service
+
+  - symbol_name: cache_get
+    file_path: backend/utils/cache.py
+    expected_adrs:
+      - ADR-0006  # Use Redis as Cache Layer
+
+  - symbol_name: Patient
+    file_path: backend/api/patient/routes.py
+    expected_adrs:
+      - ADR-0004  # Use Flask Blueprint Architecture
+      - ADR-0007  # Use RBAC
+
+  - symbol_name: create_app
+    file_path: backend/__init__.py
+    expected_adrs:
+      - ADR-0012  # Use Application Factory Pattern
+      - ADR-0001  # Use Flask as Web Framework
+
+  - symbol_name: Razorpay
+    file_path: backend/api/patient/routes.py
+    expected_adrs:
+      - ADR-0010  # Use Razorpay for Payment Processing
+
+  - symbol_name: db
+    file_path: backend/models/appointment.py
+    expected_adrs:
+      - ADR-0002  # Use SQLAlchemy ORM
+
+  - symbol_name: blueprint
+    file_path: backend/api/__init__.py
+    expected_adrs:
+      - ADR-0004  # Use Flask Blueprint Architecture

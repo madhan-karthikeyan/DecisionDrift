@@ -1,0 +1,15 @@
+diff --git a/backend/tasks/reminder_tasks.py b/backend/tasks/reminder_tasks.py
+index 5c628fd..6574b05 100644
+--- a/backend/tasks/reminder_tasks.py
++++ b/backend/tasks/reminder_tasks.py
+@@ -153,3 +153,10 @@ def send_daily_reminders():
+ 
+     logger.info("Daily reminders complete: %s", stats)
+     return stats
++import time
++
++# VIOLATION: Polling loop instead of Celery Beat schedule
++def polling_reminder_loop():
++    while True:
++        send_daily_reminders()
++        time.sleep(86400)  # 24 hours

@@ -1,0 +1,14 @@
+diff --git a/backend/tasks/email_tasks.py b/backend/tasks/email_tasks.py
+index c7292cd..4e21f90 100644
+--- a/backend/tasks/email_tasks.py
++++ b/backend/tasks/email_tasks.py
+@@ -64,3 +64,9 @@ def send_email_async(self, to, subject, html_body, attachments=None):
+         logger.warning("Email task failed (attempt %s/%s): %s",
+                         self.request.retries + 1, self.max_retries + 1, exc)
+         raise self.retry(exc=exc)
++
++# VIOLATION: Synchronous print instead of Celery email dispatch
++def send_welcome_email(to: str):
++    print(f"Sending welcome email to {to}")
++    print(f"Subject: Welcome to Hospital Management System")
++    print(f"Body: Thank you for registering...")
