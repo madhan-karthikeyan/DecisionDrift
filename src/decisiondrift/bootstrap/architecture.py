@@ -33,6 +33,26 @@ class ArchitectureModel:
         covered = sum(1 for f in self.findings if f.name.lower() in governed_names)
         return covered / len(self.findings)
 
+    def architecture_json(self) -> dict:
+        """Structured architecture model for LLM consumption.
+
+        Returns a dict grouped by category with name, confidence, and evidence.
+        Designed for serialization into LLM prompts.
+        """
+        return {
+            "schema_version": "1",
+            "technologies": [
+                {
+                    "category": cat,
+                    "name": t.name,
+                    "confidence": round(t.confidence, 2),
+                    "evidence": t.evidence,
+                }
+                for cat in self.categories()
+                for t in self.by_category(cat)
+            ],
+        }
+
     def summary(self) -> str:
         """Human-readable architecture summary."""
         lines = [

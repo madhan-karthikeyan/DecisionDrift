@@ -58,14 +58,21 @@ def adr_reject(adr_id: str, reason: str | None, adr_dir: str):
 @click.option("--apply", is_flag=True, help="Write candidates to ADR directory")
 @click.option("--min-confidence", default="low", show_default=True,
               type=click.Choice(["low", "medium", "high"]), help="Minimum confidence level")
-def bootstrap(path: str, adr_dir: str, dry_run: bool, apply: bool, min_confidence: str):
-    """Generate candidate ADRs from repository structure."""
+@click.option("--llm", is_flag=True, help="Use LLM for ADR synthesis (requires DECISIONDRIFT_LLM_API_KEY)")
+def bootstrap(path: str, adr_dir: str, dry_run: bool, apply: bool, min_confidence: str, llm: bool):
+    """Generate candidate ADRs from repository structure.
+
+    Default: deterministic detection + template-based ADR generation.
+
+    With --llm: deterministic detection + LLM-based ADR synthesis.
+    LLM requires DECISIONDRIFT_LLM_API_KEY or a decisiondrift.yml config.
+    """
     from decisiondrift.bootstrap.bootstrapper import bootstrap as run_bootstrap
 
     if apply:
         dry_run = False
 
-    run_bootstrap(path, adr_dir=adr_dir, dry_run=dry_run, min_confidence=min_confidence)
+    run_bootstrap(path, adr_dir=adr_dir, dry_run=dry_run, min_confidence=min_confidence, use_llm=llm)
 
 
 @cli.command()

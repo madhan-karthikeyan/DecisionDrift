@@ -13,7 +13,12 @@ from decisiondrift.bootstrap.detectors import (
     detect_technologies,
 )
 from decisiondrift.bootstrap.structure_scan import scan_repo
-from decisiondrift.bootstrap.suggester import apply_suggestions, generate_suggestions
+from decisiondrift.bootstrap.template_generator import (
+    apply_suggestions,
+    generate_suggestions,
+)
+from decisiondrift.bootstrap.synthesis import generate_suggestions_llm
+from decisiondrift.config import load_config
 from decisiondrift.rules.scanner import scan_imports
 
 
@@ -42,7 +47,18 @@ def bootstrap(
     adr_dir: str | Path,
     dry_run: bool = True,
     min_confidence: str = "low",
+    use_llm: bool = False,
 ) -> list:
+    """Scan a repository and generate candidate ADRs.
+
+    Args:
+        repo_path: Path to the repository root.
+        adr_dir: Path to existing ADR directory.
+        dry_run: If True, print candidates without writing.
+        min_confidence: Minimum confidence threshold ("low", "medium", "high").
+        use_llm: If True, use LLM for ADR synthesis (requires API key).
+                 LLM is opt-in — templates are the default.
+    """
     print(f"Scanning repository: {repo_path}")
 
     structure = scan_repo(repo_path)
@@ -78,7 +94,25 @@ def bootstrap(
                 if record:
                     existing_titles.add(record.title)
 
-    suggestions = generate_suggestions(model, existing_ids, existing_titles, next_id)
+    # Route to LLM or template generation
+    if use_llm:
+        from decisiondrift.llm.client import LLMClient
+        cfg = load_config()
+        llm = LLMClient(
+            model=cfg["llm"]["model"],
+            api_key=cfg["llm"]["api_key"],
+            base_url=cfg["llm"].get("base_url"),
+        )
+        if llm.available():
+            suggestions = generate_suggestions_llm(model, existing_titles, next_id, llm)
+            if not suggestions:
+                print("  LLM synthesis returned no ADRs. Falling back to templates.")
+                suggestions = generate_suggestions(model, existing_ids, existing_titles, next_id)
+        else:
+            print("  No LLM API key configured. Falling back to templates.")
+            suggestions = generate_suggestions(model, existing_ids, existing_titles, next_id)
+    else:
+        suggestions = generate_suggestions(model, existing_ids, existing_titles, next_id)
 
     if not suggestions:
         print("  No new ADRs to suggest (all already documented).")

@@ -1,26 +1,21 @@
 from __future__ import annotations
 
-import json
-import os
-from typing import Any
-
 from decisiondrift.classification.models import ClassificationInput, ClassificationResult
 from decisiondrift.classification.prompts import (
     CLASSIFICATION_SCHEMA,
     SYSTEM_PROMPT,
     build_user_prompt,
 )
+from decisiondrift.llm.client import LLMClient
 from decisiondrift.models.schema import Classification, EvidenceStrength, Finding
 
 
 class Classifier:
     def __init__(self, model: str = "gpt-4o", api_key: str | None = None, base_url: str | None = None):
-        self.model = model
-        self.api_key = api_key or os.environ.get("DECISIONDRIFT_LLM_API_KEY")
-        self.base_url = base_url
+        self.llm = LLMClient(model=model, api_key=api_key, base_url=base_url)
 
     def classify(self, inputs: list[ClassificationInput]) -> list[ClassificationResult]:
-        if not self.api_key:
+        if not self.llm.available():
             return self._fallback(inputs)
 
         return self._classify_with_llm(inputs)
@@ -41,25 +36,15 @@ class Classifier:
         ]
 
     def _classify_with_llm(self, inputs: list[ClassificationInput]) -> list[ClassificationResult]:
-        try:
-            from openai import OpenAI
-        except ImportError:
-            print("Warning: openai package not installed, falling back to needs_human_review")
-            return self._fallback(inputs)
-
-        kwargs = {"api_key": self.api_key, "timeout": 120}
-        if self.base_url:
-            kwargs["base_url"] = self.base_url
-        client = OpenAI(**kwargs)
         results: list[ClassificationResult] = []
 
         for inp in inputs:
-            result = self._classify_one(client, inp)
+            result = self._classify_one(inp)
             results.append(result)
 
         return results
 
-    def _classify_one(self, client: Any, inp: ClassificationInput) -> ClassificationResult:
+    def _classify_one(self, inp: ClassificationInput) -> ClassificationResult:
         prompt = build_user_prompt(
             adr_title=inp.adr.title,
             adr_rationale=inp.adr.rationale,
@@ -71,19 +56,11 @@ class Classifier:
         )
 
         try:
-            response = client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": prompt},
-                ],
-                response_format={"type": "json_object"},
+            data = self.llm.complete_json(
+                prompt,
+                system_prompt=SYSTEM_PROMPT,
                 temperature=0.1,
             )
-            content = response.choices[0].message.content
-            if not content:
-                raise ValueError("Empty response from LLM")
-            data = json.loads(content)
         except Exception as e:
             print(f"Warning: LLM classification failed: {e}")
             return ClassificationResult(

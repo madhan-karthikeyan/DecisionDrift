@@ -106,6 +106,38 @@ class TestDetectTechnologies:
         assert "Docker" in names
 
 
+class TestMatchDep:
+    def test_exact_match(self):
+        from decisiondrift.bootstrap.detectors import _match_dep
+        assert _match_dep("flask", "flask")
+        assert _match_dep("fastapi", "fastapi")
+
+    def test_submodule_match(self):
+        from decisiondrift.bootstrap.detectors import _match_dep
+        assert _match_dep("sqlalchemy.orm", "sqlalchemy")
+        assert _match_dep("sqlalchemy.ext.declarative", "sqlalchemy")
+
+    def test_go_module_match(self):
+        from decisiondrift.bootstrap.detectors import _match_dep
+        assert _match_dep("github.com/gin-gonic/gin", "gin-gonic/gin")
+        assert _match_dep("github.com/goccy/go-json", "go-json")
+
+    def test_java_artifact_match(self):
+        from decisiondrift.bootstrap.detectors import _match_dep
+        assert _match_dep("spring-boot-starter-web", "spring-boot")
+        assert _match_dep("spring-boot-starter-actuator", "spring-boot")
+
+    def test_extras_match(self):
+        from decisiondrift.bootstrap.detectors import _match_dep
+        assert _match_dep("psycopg[binary]", "psycopg")
+        assert _match_dep("pydantic[email]", "pydantic")
+
+    def test_no_match(self):
+        from decisiondrift.bootstrap.detectors import _match_dep
+        assert not _match_dep("flask", "django")
+        assert not _match_dep("requests", "fastapi")
+
+
 class TestArchitectureModel:
     def test_empty_model(self):
         model = ArchitectureModel([])
@@ -136,6 +168,20 @@ class TestArchitectureModel:
     def test_coverage_no_findings(self):
         model = ArchitectureModel([])
         assert model.coverage({"fastapi"}) == 0.0
+
+    def test_architecture_json(self):
+        findings = [
+            DetectedTechnology(category="framework", name="FastAPI", confidence=0.95, evidence=["dep: fastapi"]),
+            DetectedTechnology(category="cache", name="Redis", confidence=0.80, evidence=["dep: redis"]),
+        ]
+        model = ArchitectureModel(findings)
+        aj = model.architecture_json()
+        assert aj["schema_version"] == "1"
+        assert len(aj["technologies"]) == 2
+        techs = {t["name"]: t for t in aj["technologies"]}
+        assert techs["FastAPI"]["category"] == "framework"
+        assert techs["FastAPI"]["confidence"] == 0.95
+        assert techs["Redis"]["evidence"] == ["dep: redis"]
 
     def test_report_missing(self):
         findings = [
