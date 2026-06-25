@@ -1,4 +1,6 @@
-repos/
+repos/*
+!repos/hospital-management-system-V2/
+!repos/adversarial/
 docs/adr/
 venv/
 __pycache__/

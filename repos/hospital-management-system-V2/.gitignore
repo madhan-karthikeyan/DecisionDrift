@@ -1,0 +1,6 @@
+hms/
+node_modules/
+migrations/
+instance/
+frontend/node_modules
+.env

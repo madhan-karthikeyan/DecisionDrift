@@ -1,0 +1,607 @@
+/* ============================================
+   Hospital Management System - Design System
+   ============================================ */
+
+/* CSS Custom Properties - Design Tokens */
+:root {
+  /* ===== COLORS ===== */
+  /* Primary - Default (Patient theme) */
+  --color-primary: #2563EB;
+  --color-primary-hover: #1D4ED8;
+  --color-primary-light: #DBEAFE;
+  --color-primary-dark: #1D4ED8;
+
+  /* Sidebar */
+  --sidebar-bg: #1E3A8A;
+
+  /* Secondary */
+  --color-secondary: #6c757d;
+  --color-secondary-hover: #5a6268;
+
+  /* Success */
+  --color-success: #16a34a;
+  --color-success-light: #dcfce7;
+
+  /* Danger */
+  --color-danger: #dc2626;
+  --color-danger-light: #fee2e2;
+
+  /* Warning */
+  --color-warning: #d97706;
+  --color-warning-light: #fef3c7;
+
+  /* Info */
+  --color-info: #0891b2;
+  --color-info-light: #cffafe;
+
+  /* Semantic status colors */
+  --color-status-completed: #16a34a;
+  --color-status-completed-bg: #dcfce7;
+  --color-status-cancelled: #dc2626;
+  --color-status-cancelled-bg: #fee2e2;
+  --color-status-pending: #d97706;
+  --color-status-pending-bg: #fef3c7;
+
+  /* Severity colors */
+  --color-severity-mild: #16a34a;
+  --color-severity-mild-bg: #dcfce7;
+  --color-severity-moderate: #d97706;
+  --color-severity-moderate-bg: #fef3c7;
+  --color-severity-severe: #dc2626;
+  --color-severity-severe-bg: #fee2e2;
+
+  /* Accent colors for doctor UI elements */
+  --color-teal: #14B8A6;
+  --color-teal-dark: #0D9488;
+  --color-amber: #F59E0B;
+  --color-violet: #8B5CF6;
+
+  /* Accent shadow variants for button box-shadows */
+  --color-success-shadow: rgba(16, 185, 129, 0.3);
+  --color-success-shadow-md: rgba(16, 185, 129, 0.4);
+  --color-danger-shadow: rgba(220, 38, 38, 0.3);
+  --color-danger-shadow-md: rgba(220, 38, 38, 0.4);
+  --color-teal-shadow: rgba(20, 184, 166, 0.3);
+  --color-teal-shadow-md: rgba(20, 184, 166, 0.4);
+
+  /* Role badge colors */
+  --color-badge-admin-bg: #fee2e2;
+  --color-badge-admin-text: #dc2626;
+  --color-badge-doctor-bg: #cffafe;
+  --color-badge-doctor-text: #0e7490;
+  --color-badge-patient-bg: #dcfce7;
+  --color-badge-patient-text: #15803d;
+
+  /* Stat card icon backgrounds */
+  --color-stat-primary-bg: #DBEAFE;
+  --color-stat-success-bg: #dcfce7;
+  --color-stat-warning-bg: #fef3c7;
+  --color-stat-info-bg: #cffafe;
+
+  /* Brand (teal — used on auth pages and dashboard headers) */
+  --color-brand: #1abc9c;
+  --color-brand-dark: #16a085;
+  --color-brand-shadow: rgba(26, 188, 156, 0.3);
+  --color-brand-shadow-sm: rgba(26, 188, 156, 0.1);
+
+  /* Auth page */
+  --color-auth-gradient-start: #667eea;
+  --color-auth-gradient-end: #764ba2;
+
+  /* Admin dark header gradient */
+  --color-header-gradient-start: #1a1a2e;
+  --color-header-gradient-end: #16213e;
+
+  /* Badge text variants (darker shades) */
+  --color-warning-dark: #856404;
+  --color-info-dark: #055160;
+
+  /* Alert border colors */
+  --color-alert-success-border: #bbf7d0;
+  --color-alert-danger-border: #fecaca;
+  --color-alert-warning-border: #fde68a;
+  --color-alert-info-border: #a5f3fc;
+
+  /* Neutrals */
+  --color-white: #ffffff;
+  --color-light: #f8f9fa;
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f8f9fa;
+  --color-gray-200: #e9ecef;
+  --color-gray-300: #dee2e6;
+  --color-gray-400: #ced4da;
+  --color-gray-500: #adb5bd;
+  --color-gray-600: #6c757d;
+  --color-gray-700: #495057;
+  --color-gray-800: #343a40;
+  --color-gray-900: #212529;
+  --color-dark: #212529;
+
+  /* Text */
+  --color-text-primary: #212529;
+  --color-text-secondary: #6c757d;
+  --color-text-muted: #adb5bd;
+
+  /* Backgrounds */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-body: #f5f7fa;
+
+  /* Borders */
+  --border-color: #dee2e6;
+  --border-color-focus: var(--color-primary);
+
+  /* Primary shadow (rgba variants for box-shadow) */
+  --color-primary-shadow-sm: rgba(37, 99, 235, 0.1);
+  --color-primary-shadow: rgba(37, 99, 235, 0.3);
+  --color-primary-shadow-md: rgba(37, 99, 235, 0.4);
+
+  /* ===== SPACING (4px base unit) ===== */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-base: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+
+  /* ===== TYPOGRAPHY ===== */
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-size-xs: 0.75rem;    /* 12px */
+  --font-size-sm: 0.875rem;   /* 14px */
+  --font-size-base: 1rem;     /* 16px */
+  --font-size-lg: 1.125rem;   /* 18px */
+  --font-size-xl: 1.25rem;    /* 20px */
+  --font-size-2xl: 1.5rem;    /* 24px */
+  --font-size-3xl: 1.875rem;  /* 30px */
+  --font-size-4xl: 2.25rem;   /* 36px */
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-base: 1.5;
+  --line-height-tight: 1.2;
+
+  /* ===== BORDER RADIUS ===== */
+  --radius-sm: 4px;
+  --radius-base: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* ===== SHADOWS ===== */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-base: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.1);
+  --shadow-focus: 0 0 0 3px rgba(13, 110, 253, 0.25);
+
+  /* ===== TRANSITIONS ===== */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s ease;
+  --transition-bounce: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ===== Z-INDEX ===== */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+}
+
+/* ===== BASE STYLES ===== */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  color: var(--color-text-primary);
+  background-color: var(--bg-body);
+}
+
+#app {
+  min-height: 100vh;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--color-primary-hover);
+}
+
+/* ===== TYPOGRAPHY ===== */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0 0 var(--space-base);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  color: var(--color-text-primary);
+}
+
+h1 { font-size: var(--font-size-4xl); }
+h2 { font-size: var(--font-size-3xl); }
+h3 { font-size: var(--font-size-2xl); }
+h4 { font-size: var(--font-size-xl); }
+h5 { font-size: var(--font-size-lg); }
+h6 { font-size: var(--font-size-base); }
+
+p {
+  margin: 0 0 var(--space-base);
+}
+
+/* ===== FORM ELEMENTS ===== */
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* ===== UTILITY CLASSES ===== */
+.text-primary { color: var(--color-primary); }
+.text-secondary { color: var(--color-secondary); }
+.text-success { color: var(--color-success); }
+.text-danger { color: var(--color-danger); }
+.text-warning { color: var(--color-warning); }
+.text-muted { color: var(--color-text-muted); }
+
+.bg-primary { background-color: var(--color-primary); }
+.bg-secondary { background-color: var(--color-secondary); }
+.bg-success { background-color: var(--color-success); }
+.bg-danger { background-color: var(--color-danger); }
+.bg-light { background-color: var(--color-light); }
+.bg-white { background-color: var(--color-white); }
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+/* Animation Classes */
+.animate-fadeIn { animation: fadeIn 0.3s ease forwards; }
+.animate-slideInUp { animation: slideInUp 0.35s ease forwards; }
+.animate-slideInLeft { animation: slideInLeft 0.35s ease forwards; }
+.animate-slideInRight { animation: slideInRight 0.35s ease forwards; }
+.animate-scaleIn { animation: scaleIn 0.35s ease forwards; }
+.animate-shake { animation: shake 0.3s ease; }
+.animate-pulse { animation: pulse 2s ease infinite; }
+.animate-spin { animation: spin 1s linear infinite; }
+.animate-float { animation: float 3s ease-in-out infinite; }
+
+/* Transition Classes */
+.transition-base { transition: all var(--transition-base); }
+.transition-fast { transition: all var(--transition-fast); }
+.transition-slow { transition: all var(--transition-slow); }
+
+/* ===== LAYOUT UTILITIES ===== */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-lg);
+}
+
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-wrap { flex-wrap: wrap; }
+.items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+.items-end { align-items: flex-end; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.justify-end { justify-content: flex-end; }
+.gap-xs { gap: var(--space-xs); }
+.gap-sm { gap: var(--space-sm); }
+.gap-md { gap: var(--space-md); }
+.gap-base { gap: var(--space-base); }
+.gap-lg { gap: var(--space-lg); }
+.gap-xl { gap: var(--space-xl); }
+
+.grid { display: grid; }
+
+/* ===== SPACING UTILITIES ===== */
+.m-0 { margin: 0; }
+.m-auto { margin: auto; }
+.mt-auto { margin-top: auto; }
+.mb-auto { margin-bottom: auto; }
+
+/* Spacing - xs */
+.m-xs { margin: var(--space-xs); }
+.mt-xs { margin-top: var(--space-xs); }
+.mb-xs { margin-bottom: var(--space-xs); }
+.ml-xs { margin-left: var(--space-xs); }
+.mr-xs { margin-right: var(--space-xs); }
+.mx-xs { margin-left: var(--space-xs); margin-right: var(--space-xs); }
+.my-xs { margin-top: var(--space-xs); margin-bottom: var(--space-xs); }
+.p-xs { padding: var(--space-xs); }
+.pt-xs { padding-top: var(--space-xs); }
+.pb-xs { padding-bottom: var(--space-xs); }
+.pl-xs { padding-left: var(--space-xs); }
+.pr-xs { padding-right: var(--space-xs); }
+.px-xs { padding-left: var(--space-xs); padding-right: var(--space-xs); }
+.py-xs { padding-top: var(--space-xs); padding-bottom: var(--space-xs); }
+
+/* Spacing - sm */
+.m-sm { margin: var(--space-sm); }
+.mt-sm { margin-top: var(--space-sm); }
+.mb-sm { margin-bottom: var(--space-sm); }
+.ml-sm { margin-left: var(--space-sm); }
+.mr-sm { margin-right: var(--space-sm); }
+.mx-sm { margin-left: var(--space-sm); margin-right: var(--space-sm); }
+.my-sm { margin-top: var(--space-sm); margin-bottom: var(--space-sm); }
+.p-sm { padding: var(--space-sm); }
+.pt-sm { padding-top: var(--space-sm); }
+.pb-sm { padding-bottom: var(--space-sm); }
+.pl-sm { padding-left: var(--space-sm); }
+.pr-sm { padding-right: var(--space-sm); }
+.px-sm { padding-left: var(--space-sm); padding-right: var(--space-sm); }
+.py-sm { padding-top: var(--space-sm); padding-bottom: var(--space-sm); }
+
+/* Spacing - md */
+.m-md { margin: var(--space-md); }
+.mt-md { margin-top: var(--space-md); }
+.mb-md { margin-bottom: var(--space-md); }
+.ml-md { margin-left: var(--space-md); }
+.mr-md { margin-right: var(--space-md); }
+.mx-md { margin-left: var(--space-md); margin-right: var(--space-md); }
+.my-md { margin-top: var(--space-md); margin-bottom: var(--space-md); }
+.p-md { padding: var(--space-md); }
+.pt-md { padding-top: var(--space-md); }
+.pb-md { padding-bottom: var(--space-md); }
+.pl-md { padding-left: var(--space-md); }
+.pr-md { padding-right: var(--space-md); }
+.px-md { padding-left: var(--space-md); padding-right: var(--space-md); }
+.py-md { padding-top: var(--space-md); padding-bottom: var(--space-md); }
+
+/* Spacing - base */
+.m-base { margin: var(--space-base); }
+.mt-base { margin-top: var(--space-base); }
+.mb-base { margin-bottom: var(--space-base); }
+.ml-base { margin-left: var(--space-base); }
+.mr-base { margin-right: var(--space-base); }
+.mx-base { margin-left: var(--space-base); margin-right: var(--space-base); }
+.my-base { margin-top: var(--space-base); margin-bottom: var(--space-base); }
+.p-base { padding: var(--space-base); }
+.pt-base { padding-top: var(--space-base); }
+.pb-base { padding-bottom: var(--space-base); }
+.pl-base { padding-left: var(--space-base); }
+.pr-base { padding-right: var(--space-base); }
+.px-base { padding-left: var(--space-base); padding-right: var(--space-base); }
+.py-base { padding-top: var(--space-base); padding-bottom: var(--space-base); }
+
+/* Spacing - lg */
+.m-lg { margin: var(--space-lg); }
+.mt-lg { margin-top: var(--space-lg); }
+.mb-lg { margin-bottom: var(--space-lg); }
+.ml-lg { margin-left: var(--space-lg); }
+.mr-lg { margin-right: var(--space-lg); }
+.mx-lg { margin-left: var(--space-lg); margin-right: var(--space-lg); }
+.my-lg { margin-top: var(--space-lg); margin-bottom: var(--space-lg); }
+.p-lg { padding: var(--space-lg); }
+.pt-lg { padding-top: var(--space-lg); }
+.pb-lg { padding-bottom: var(--space-lg); }
+.pl-lg { padding-left: var(--space-lg); }
+.pr-lg { padding-right: var(--space-lg); }
+.px-lg { padding-left: var(--space-lg); padding-right: var(--space-lg); }
+.py-lg { padding-top: var(--space-lg); padding-bottom: var(--space-lg); }
+
+/* Spacing - xl */
+.m-xl { margin: var(--space-xl); }
+.mt-xl { margin-top: var(--space-xl); }
+.mb-xl { margin-bottom: var(--space-xl); }
+.ml-xl { margin-left: var(--space-xl); }
+.mr-xl { margin-right: var(--space-xl); }
+.mx-xl { margin-left: var(--space-xl); margin-right: var(--space-xl); }
+.my-xl { margin-top: var(--space-xl); margin-bottom: var(--space-xl); }
+.p-xl { padding: var(--space-xl); }
+.pt-xl { padding-top: var(--space-xl); }
+.pb-xl { padding-bottom: var(--space-xl); }
+.pl-xl { padding-left: var(--space-xl); }
+.pr-xl { padding-right: var(--space-xl); }
+.px-xl { padding-left: var(--space-xl); padding-right: var(--space-xl); }
+.py-xl { padding-top: var(--space-xl); padding-bottom: var(--space-xl); }
+
+/* Spacing - 2xl */
+.m-2xl { margin: var(--space-2xl); }
+.mt-2xl { margin-top: var(--space-2xl); }
+.mb-2xl { margin-bottom: var(--space-2xl); }
+.ml-2xl { margin-left: var(--space-2xl); }
+.mr-2xl { margin-right: var(--space-2xl); }
+.mx-2xl { margin-left: var(--space-2xl); margin-right: var(--space-2xl); }
+.my-2xl { margin-top: var(--space-2xl); margin-bottom: var(--space-2xl); }
+.p-2xl { padding: var(--space-2xl); }
+.pt-2xl { padding-top: var(--space-2xl); }
+.pb-2xl { padding-bottom: var(--space-2xl); }
+.pl-2xl { padding-left: var(--space-2xl); }
+.pr-2xl { padding-right: var(--space-2xl); }
+.px-2xl { padding-left: var(--space-2xl); padding-right: var(--space-2xl); }
+.py-2xl { padding-top: var(--space-2xl); padding-bottom: var(--space-2xl); }
+
+/* Spacing - 3xl */
+.m-3xl { margin: var(--space-3xl); }
+.mt-3xl { margin-top: var(--space-3xl); }
+.mb-3xl { margin-bottom: var(--space-3xl); }
+.ml-3xl { margin-left: var(--space-3xl); }
+.mr-3xl { margin-right: var(--space-3xl); }
+.mx-3xl { margin-left: var(--space-3xl); margin-right: var(--space-3xl); }
+.my-3xl { margin-top: var(--space-3xl); margin-bottom: var(--space-3xl); }
+.p-3xl { padding: var(--space-3xl); }
+.pt-3xl { padding-top: var(--space-3xl); }
+.pb-3xl { padding-bottom: var(--space-3xl); }
+.pl-3xl { padding-left: var(--space-3xl); }
+.pr-3xl { padding-right: var(--space-3xl); }
+.px-3xl { padding-left: var(--space-3xl); padding-right: var(--space-3xl); }
+.py-3xl { padding-top: var(--space-3xl); padding-bottom: var(--space-3xl); }
+
+/* ===== VISIBILITY ===== */
+.hidden { display: none; }
+.invisible { visibility: hidden; }
+.opacity-0 { opacity: 0; }
+.opacity-50 { opacity: 0.5; }
+.opacity-100 { opacity: 1; }
+
+/* ===== RESPONSIVE BREAKPOINTS ===== */
+/* Mobile First */
+@media (min-width: 576px) {
+  .sm\:flex { display: flex; }
+  .sm\:hidden { display: none; }
+}
+
+@media (min-width: 768px) {
+  .md\:flex { display: flex; }
+  .md\:hidden { display: none; }
+}
+
+@media (min-width: 992px) {
+  .lg\:flex { display: flex; }
+  .lg\:hidden { display: none; }
+}
+
+@media (min-width: 1200px) {
+  .xl\:flex { display: flex; }
+  .xl\:hidden { display: none; }
+}
+
+/* ===== FOCUS STATES ===== */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ===== ROLE THEME OVERRIDES ===== */
+/* Patient Theme (default - blue) */
+.theme-patient {
+  --color-primary: #2563EB;
+  --color-primary-hover: #1D4ED8;
+  --color-primary-light: #DBEAFE;
+  --color-primary-dark: #1D4ED8;
+  --sidebar-bg: #1E3A8A;
+  --shadow-focus: 0 0 0 3px rgba(37, 99, 235, 0.25);
+  --color-primary-shadow-sm: rgba(37, 99, 235, 0.1);
+  --color-primary-shadow: rgba(37, 99, 235, 0.3);
+  --color-primary-shadow-md: rgba(37, 99, 235, 0.4);
+}
+
+/* Doctor Theme (green) */
+.theme-doctor {
+  --color-primary: #059669;
+  --color-primary-hover: #047857;
+  --color-primary-light: #D1FAE5;
+  --color-primary-dark: #047857;
+  --sidebar-bg: #064E3B;
+  --shadow-focus: 0 0 0 3px rgba(5, 150, 105, 0.25);
+  --color-primary-shadow-sm: rgba(5, 150, 105, 0.1);
+  --color-primary-shadow: rgba(5, 150, 105, 0.3);
+  --color-primary-shadow-md: rgba(5, 150, 105, 0.4);
+}
+
+/* Admin Theme (purple) */
+.theme-admin {
+  --color-primary: #7C3AED;
+  --color-primary-hover: #6D28D9;
+  --color-primary-light: #EDE9FE;
+  --color-primary-dark: #6D28D9;
+  --sidebar-bg: #4C1D95;
+  --shadow-focus: 0 0 0 3px rgba(124, 58, 237, 0.25);
+  --color-primary-shadow-sm: rgba(124, 58, 237, 0.1);
+  --color-primary-shadow: rgba(124, 58, 237, 0.3);
+  --color-primary-shadow-md: rgba(124, 58, 237, 0.4);
+}

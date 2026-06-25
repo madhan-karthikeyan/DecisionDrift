@@ -1,0 +1,7 @@
+{
+  "name": "express-sample",
+  "dependencies": {
+    "express": "^4.18.2",
+    "redis": "^4.6.7"
+  }
+}

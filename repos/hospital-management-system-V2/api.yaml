@@ -1,0 +1,549 @@
+swagger: "2.0"
+# TODO: This API spec is out of sync with actual routes. Missing /api prefix,
+# wrong HTTP methods, missing 20+ endpoints, and references form-encoded data
+# but implementation uses JSON. Needs a full rewrite to match the current backend.
+info:
+  title: Hospital Management System API
+  description: API documentation for the Hospital Management System using Flask
+  version: 1.0.0
+basePath: /
+schemes:
+  - http
+
+tags:
+  - name: Auth
+    description: User authentication
+  - name: Admin
+    description: Administrative operations
+  - name: Doctor
+    description: Doctor interfaces
+  - name: Patient
+    description: Patient interfaces
+
+paths:
+  # ===========================
+  # AUTH ROUTES
+  # ===========================
+  /auth/login:
+    get:
+      tags: [Auth]
+      summary: View login page
+      responses:
+        200:
+          description: Login form
+    post:
+      tags: [Auth]
+      summary: Submit login credentials
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - name: email
+          in: formData
+          type: string
+          required: true
+        - name: password
+          in: formData
+          type: string
+          required: true
+      responses:
+        200:
+          description: Login successful
+  
+  /auth/register:
+    get:
+      tags: [Auth]
+      summary: View registration page
+      responses:
+        200:
+          description: Registration form
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      responses:
+        201:
+          description: User registered
+
+  /auth/logout:
+    get:
+      tags: [Auth]
+      summary: Logout user
+      responses:
+        302:
+          description: Redirect to login
+
+  # ===========================
+  # ADMIN ROUTES
+  # ===========================
+  /admin/dashboard:
+    get:
+      tags: [Admin]
+      summary: View admin dashboard
+      responses:
+        200:
+          description: Admin dashboard view
+
+  /admin/doctors:
+    get:
+      tags: [Admin]
+      summary: List all doctors
+      responses:
+        200:
+          description: List of doctors
+
+  /admin/doctors/add:
+    get:
+      tags: [Admin]
+      summary: View add doctor form
+      responses:
+        200:
+          description: Add doctor form
+    post:
+      tags: [Admin]
+      summary: Create a new doctor
+      responses:
+        201:
+          description: Doctor created
+
+  /admin/doctors/edit/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        type: string
+    get:
+      tags: [Admin]
+      summary: View edit doctor form
+      responses:
+        200:
+          description: Edit form
+    post:
+      tags: [Admin]
+      summary: Update doctor details
+      responses:
+        200:
+          description: Doctor updated
+
+  /admin/doctors/delete/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        type: string
+    get:
+      tags: [Admin]
+      summary: Confirm delete doctor
+      responses:
+        200:
+          description: Confirmation page
+    post:
+      tags: [Admin]
+      summary: Delete doctor
+      responses:
+        200:
+          description: Doctor deleted
+
+  /admin/patients:
+    get:
+      tags: [Admin]
+      summary: List all patients
+      responses:
+        200:
+          description: List of patients
+
+  /admin/patients/add:
+    get:
+      tags: [Admin]
+      summary: View add patient form
+      responses:
+        200:
+          description: Add patient form
+    post:
+      tags: [Admin]
+      summary: Create a new patient
+      responses:
+        201:
+          description: Patient created
+
+  /admin/patients/edit/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        type: string
+    get:
+      tags: [Admin]
+      summary: View edit patient form
+      responses:
+        200:
+          description: Edit form
+    post:
+      tags: [Admin]
+      summary: Update patient details
+      responses:
+        200:
+          description: Patient updated
+
+  /admin/patients/delete/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        type: string
+    get:
+      tags: [Admin]
+      summary: Confirm delete patient
+      responses:
+        200:
+          description: Confirmation page
+    post:
+      tags: [Admin]
+      summary: Delete patient
+      responses:
+        200:
+          description: Patient deleted
+
+  /admin/departments:
+    get:
+      tags: [Admin]
+      summary: List all departments
+      responses:
+        200:
+          description: List of departments
+
+  /admin/departments/add:
+    get:
+      tags: [Admin]
+      summary: View add department form
+      responses:
+        200:
+          description: Add department form
+    post:
+      tags: [Admin]
+      summary: Create a new department
+      responses:
+        201:
+          description: Department created
+
+  /admin/departments/edit/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        type: string
+    get:
+      tags: [Admin]
+      summary: View edit department form
+      responses:
+        200:
+          description: Edit form
+    post:
+      tags: [Admin]
+      summary: Update department details
+      responses:
+        200:
+          description: Department updated
+
+  /admin/departments/delete/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        type: string
+    get:
+      tags: [Admin]
+      summary: Confirm delete department
+      responses:
+        200:
+          description: Confirmation page
+    post:
+      tags: [Admin]
+      summary: Delete department
+      responses:
+        200:
+          description: Department deleted
+
+  /admin/appointments:
+    get:
+      tags: [Admin]
+      summary: View all system appointments
+      responses:
+        200:
+          description: List of appointments
+
+  # ===========================
+  # DOCTOR ROUTES
+  # ===========================
+  /doctor/dashboard:
+    get:
+      tags: [Doctor]
+      summary: View doctor dashboard
+      responses:
+        200:
+          description: Doctor dashboard
+
+  /doctor/appointments:
+    get:
+      tags: [Doctor]
+      summary: View assigned appointments
+      responses:
+        200:
+          description: List of appointments
+
+  /doctor/appointment/{appointment_id}/diagnosis:
+    parameters:
+      - name: appointment_id
+        in: path
+        required: true
+        type: string
+    get:
+      tags: [Doctor]
+      summary: View diagnosis form
+      responses:
+        200:
+          description: Diagnosis form
+    post:
+      tags: [Doctor]
+      summary: Submit diagnosis
+      responses:
+        200:
+          description: Diagnosis saved
+
+  /doctor/add_diagnosis/{appointment_id}:
+    parameters:
+      - name: appointment_id
+        in: path
+        required: true
+        type: string
+    get:
+      tags: [Doctor]
+      summary: View add diagnosis page
+      responses:
+        200:
+          description: Form view
+    post:
+      tags: [Doctor]
+      summary: Add diagnosis record
+      responses:
+        200:
+          description: Record added
+
+  /doctor/appointment/{appointment_id}/complete:
+    parameters:
+      - name: appointment_id
+        in: path
+        required: true
+        type: string
+    post:
+      tags: [Doctor]
+      summary: Mark appointment as completed
+      responses:
+        200:
+          description: Status updated
+
+  /doctor/appointment/{appointment_id}/cancel:
+    parameters:
+      - name: appointment_id
+        in: path
+        required: true
+        type: string
+    post:
+      tags: [Doctor]
+      summary: Cancel an appointment
+      responses:
+        200:
+          description: Appointment cancelled
+
+  /doctor/patient_history:
+    get:
+      tags: [Doctor]
+      summary: View general patient history list
+      responses:
+        200:
+          description: List view
+
+  /doctor/patient/{patient_id}/history:
+    parameters:
+      - name: patient_id
+        in: path
+        required: true
+        type: string
+    get:
+      tags: [Doctor]
+      summary: View specific patient treatment history
+      responses:
+        200:
+          description: Patient history view
+
+  /doctor/doctor/availability:
+    get:
+      tags: [Doctor]
+      summary: View availability settings
+      responses:
+        200:
+          description: Availability form
+    post:
+      tags: [Doctor]
+      summary: Update availability
+      responses:
+        200:
+          description: Availability updated
+
+  # ===========================
+  # PATIENT ROUTES
+  # ===========================
+  /patient/dashboard:
+    get:
+      tags: [Patient]
+      summary: View patient dashboard
+      responses:
+        200:
+          description: Dashboard view
+
+  /patient/profile:
+    get:
+      tags: [Patient]
+      summary: View profile
+      responses:
+        200:
+          description: Profile details
+
+  /patient/profile/update:
+    post:
+      tags: [Patient]
+      summary: Update profile information
+      consumes:
+        - application/x-www-form-urlencoded
+      responses:
+        200:
+          description: Profile updated
+
+  /patient/search:
+    get:
+      tags: [Patient]
+      summary: Search for doctors
+      parameters:
+        - name: query
+          in: query
+          type: string
+          description: Search term (name or department)
+      responses:
+        200:
+          description: Search results
+
+  /patient/doctor/{doctor_id}/available-slots:
+    parameters:
+      - name: doctor_id
+        in: path
+        required: true
+        type: string
+    get:
+      tags: [Patient]
+      summary: Get available slots for a doctor
+      responses:
+        200:
+          description: List of time slots
+
+  /patient/appointments:
+    get:
+      tags: [Patient]
+      summary: View my appointments
+      responses:
+        200:
+          description: List of appointments
+
+  /patient/appointments/create-payment-order:
+    post:
+      tags: [Patient]
+      summary: Create Razorpay payment order for appointment
+      consumes:
+        - application/json
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            required: [doctor_id, appointment_date, appointment_time]
+            properties:
+              doctor_id:
+                type: string
+              appointment_date:
+                type: string
+                format: date
+              appointment_time:
+                type: string
+              reason:
+                type: string
+      responses:
+        201:
+          description: Payment order created
+        400:
+          description: Validation error
+        409:
+          description: Slot already booked
+
+  /patient/appointments/verify-payment:
+    post:
+      tags: [Patient]
+      summary: Verify Razorpay payment and book appointment
+      consumes:
+        - application/json
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            required: [razorpay_order_id, razorpay_payment_id, razorpay_signature]
+            properties:
+              razorpay_order_id:
+                type: string
+              razorpay_payment_id:
+                type: string
+              razorpay_signature:
+                type: string
+      responses:
+        201:
+          description: Payment verified and appointment booked
+        400:
+          description: Verification failed
+        409:
+          description: Slot already booked or payment already processed
+
+  /patient/appointments/reschedule:
+    post:
+      tags: [Patient]
+      summary: Reschedule an existing appointment
+      consumes:
+        - application/x-www-form-urlencoded
+      responses:
+        200:
+          description: Appointment rescheduled
+
+  /patient/appointments/cancel/{appointment_id}:
+    parameters:
+      - name: appointment_id
+        in: path
+        required: true
+        type: string
+    post:
+      tags: [Patient]
+      summary: Cancel appointment
+      responses:
+        200:
+          description: Appointment cancelled
+
+  # ===========================
+  # GENERAL ROUTES
+  # ===========================
+  /:
+    get:
+      tags: [General]
+      summary: Home page
+      responses:
+        200:
+          description: Landing page
+    post:
+      tags: [General]
+      summary: Home page actions
+      responses:
+        200:
+          description: Action processed

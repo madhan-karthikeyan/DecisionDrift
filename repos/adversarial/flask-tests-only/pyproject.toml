@@ -1,0 +1,10 @@
+
+[project]
+name = "my-app"
+version = "0.1.0"
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0",
+    "flask>=3.0",
+]

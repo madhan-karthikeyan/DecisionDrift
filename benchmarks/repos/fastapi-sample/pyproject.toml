@@ -1,0 +1,7 @@
+[project]
+name = "fastapi-sample"
+dependencies = [
+    "fastapi>=0.100.0",
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.11.0",
+]

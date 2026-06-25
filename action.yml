@@ -1,5 +1,5 @@
 name: 'DecisionDrift Review'
-description: 'PR review against documented ADRs — detects violations of architecture decisions. Supports deterministic enforce and AI-powered review modes.'
+description: 'Detect violations of architecture decisions in PRs via deterministic rules and optional LLM semantic review.'
 author: 'DecisionDrift'
 branding:
   icon: 'check-circle'
