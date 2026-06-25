@@ -4,9 +4,26 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "decisiondrift"
-version = "1.0.0-beta.1"
-description = "Decision-aware AI PR review agent"
+version = "1.0.0-beta.2"
+description = "Deterministic-first decision governance — codify architecture decisions as enforceable rules"
+readme = "README.md"
 requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Madhan Karthikeyan", email = "hello@madhankarthikeyan.com"},
+]
+keywords = ["adr", "architecture-decision-records", "lint", "code-review", "governance"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Documentation",
+]
 dependencies = [
     "click>=8.0",
     "jsonschema>=4.0",
@@ -38,7 +55,7 @@ ast = [
 ]
 
 [project.urls]
-Source = "https://github.com/org/decisiondrift"
+Source = "https://github.com/madhan-karthikeyan/DecisionDrift"
 
 [project.scripts]
 decisiondrift = "decisiondrift.cli:cli"
