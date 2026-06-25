@@ -8,6 +8,8 @@
 
 **Deterministic-first decision governance.** Codify architecture decisions as enforceable rules, detect drift before it reaches production, and keep your codebase aligned with documented decisions.
 
+![DecisionDrift Demo](demo.gif)
+
 ```
 Repository ADRs (docs/adr/)
          │
