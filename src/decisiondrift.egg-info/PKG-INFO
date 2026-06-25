@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: decisiondrift
-Version: 0.1.0
+Version: 1.0.0b1
 Summary: Decision-aware AI PR review agent
 Project-URL: Source, https://github.com/org/decisiondrift
 Requires-Python: >=3.11
