@@ -1,0 +1,11 @@
+{
+  "expected_technologies": [
+    "Go",
+    "Gin",
+    "Docker"
+  ],
+  "expected_adrs": [
+    "Use Go as the primary backend language",
+    "Use Gin as the backend framework"
+  ]
+}

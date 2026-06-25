@@ -1,0 +1,13 @@
+{
+  "expected_technologies": [
+    "Django",
+    "Celery",
+    "PostgreSQL",
+    "Python"
+  ],
+  "expected_adrs": [
+    "Use Python as the primary backend language",
+    "Use Django as Web Framework",
+    "Use Celery for asynchronous jobs"
+  ]
+}

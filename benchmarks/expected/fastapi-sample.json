@@ -1,0 +1,14 @@
+{
+  "expected_technologies": [
+    "FastAPI",
+    "SQLAlchemy",
+    "Alembic",
+    "Docker",
+    "Python"
+  ],
+  "expected_adrs": [
+    "Use Python as the primary backend language",
+    "Use FastAPI for HTTP APIs",
+    "Use SQLAlchemy for relational persistence"
+  ]
+}

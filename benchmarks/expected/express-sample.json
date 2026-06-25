@@ -1,0 +1,12 @@
+{
+  "expected_technologies": [
+    "Express",
+    "Redis",
+    "NPM",
+    "JavaScript"
+  ],
+  "expected_adrs": [
+    "Use JavaScript as the primary language",
+    "Use Express for Node HTTP Services"
+  ]
+}
