@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from typing import Any
 
 from decisiondrift.bootstrap.architecture import ArchitectureModel
 from decisiondrift.bootstrap.template_generator import (

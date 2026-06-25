@@ -3,7 +3,7 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 
-from decisiondrift.bootstrap.structure_scan import EXCLUDED_DIRS, INDICATOR_FILES, MAX_DEPTH, scan_repo
+from decisiondrift.bootstrap.structure_scan import EXCLUDED_DIRS, scan_repo
 
 HMS_V2 = Path(__file__).parent.parent / "repos" / "hospital-management-system-V2"
 
@@ -71,6 +71,7 @@ class TestStructureScan:
 
     def test_non_existent_dir_raises_error(self):
         import pytest
+
         with pytest.raises(NotADirectoryError):
             scan_repo("/nonexistent/path")
 

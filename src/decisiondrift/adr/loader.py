@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from decisiondrift.adr.parser import parse_adr_file
 from decisiondrift.models.schema import DecisionRecord
 
 
-def load_adrs(adr_dir: str | Path, status_filter: Optional[set[str]] = None) -> list[DecisionRecord]:
+def load_adrs(adr_dir: str | Path, status_filter: set[str] | None = None) -> list[DecisionRecord]:
     adr_path = Path(adr_dir)
     if not adr_path.exists():
         return []

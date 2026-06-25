@@ -6,17 +6,45 @@ from pathlib import Path
 from decisiondrift.impact.models import ChangedFile
 
 EXCLUDED_DIRS = {
-    "node_modules", "vendor", ".git", "__pycache__",
-    "dist", "build", ".egg-info", "venv", ".venv",
-    "migrations", ".tox", "env",
+    "node_modules",
+    "vendor",
+    ".git",
+    "__pycache__",
+    "dist",
+    "build",
+    ".egg-info",
+    "venv",
+    ".venv",
+    "migrations",
+    ".tox",
+    "env",
 }
 
 BINARY_EXTENSIONS = {
-    ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico", ".svg",
-    ".woff", ".woff2", ".ttf", ".eot",
-    ".pdf", ".zip", ".tar", ".gz", ".bz2",
-    ".pyc", ".pyo", ".so", ".dll", ".dylib",
-    ".db", ".sqlite", ".sqlite3",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".bmp",
+    ".ico",
+    ".svg",
+    ".woff",
+    ".woff2",
+    ".ttf",
+    ".eot",
+    ".pdf",
+    ".zip",
+    ".tar",
+    ".gz",
+    ".bz2",
+    ".pyc",
+    ".pyo",
+    ".so",
+    ".dll",
+    ".dylib",
+    ".db",
+    ".sqlite",
+    ".sqlite3",
 }
 
 DEVNULL = "/dev/null"
@@ -81,11 +109,13 @@ def _commit(files: list[ChangedFile], path: str | None, change_type: str | None)
         return
     if _is_binary(path):
         return
-    files.append(ChangedFile(
-        path=path,
-        language=_detect_language(path),
-        change_type=change_type,
-    ))
+    files.append(
+        ChangedFile(
+            path=path,
+            language=_detect_language(path),
+            change_type=change_type,
+        )
+    )
 
 
 def parse_diff(diff_text: str) -> list[ChangedFile]:

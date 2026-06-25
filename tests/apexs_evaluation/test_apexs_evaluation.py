@@ -19,6 +19,7 @@ DOCKER_FIXTURE = REPO_DIR / "backend" / "app" / "core" / "docker_config.py"
 _ollama_running = False
 try:
     import httpx
+
     r = httpx.get("http://localhost:11434/api/tags", timeout=2)
     _ollama_running = r.status_code == 200
 except Exception:
@@ -75,14 +76,24 @@ def docker_fixture():
 # Pipeline tests — verify the review pipeline runs end-to-end
 # ---------------------------------------------------------------------------
 
+
 class TestApexSPipeline:
     """Verify the review pipeline runs without errors for each patch."""
 
-    @pytest.mark.parametrize("patch_name", [
-        "fastapi_violation", "apirouter_violation", "migration_violation",
-        "frontend_violation", "docker_violation",
-        "fastapi_valid", "apirouter_valid", "migration_valid", "docker_valid",
-    ])
+    @pytest.mark.parametrize(
+        "patch_name",
+        [
+            "fastapi_violation",
+            "apirouter_violation",
+            "migration_violation",
+            "frontend_violation",
+            "docker_violation",
+            "fastapi_valid",
+            "apirouter_valid",
+            "migration_valid",
+            "docker_valid",
+        ],
+    )
     def test_pipeline_runs(self, patch_name, expectations, config, docker_fixture):
         spec = expectations[patch_name]
         patch_text = (PATCHES_DIR / spec["file"]).read_text()
@@ -98,14 +109,15 @@ class TestApexSPipeline:
 # Retrieval tests — verify expected ADRs are in the retrieved set
 # ---------------------------------------------------------------------------
 
+
 class TestApexSRetrieval:
     """Tests that the correct ADRs are retrieved for each patch.
-    
+
     Note: Keyword-only retrieval matches by substring against ADR title,
     keywords, evidence paths, and rationale text. Some expected ADRs may
     not be retrieved if the patch's symbol names and file paths don't
     contain any substrings matching those fields.
-    
+
     Known limitations:
     - migration_violation: ADR-0001 (Alembic) is not retrieved because
       user.py symbols/terms don't contain "alembic", "migrations",
@@ -114,13 +126,16 @@ class TestApexSRetrieval:
       "app" in "application" title — a coincidental substring match.
     """
 
-    @pytest.mark.parametrize("patch_name,expected_adrs", [
-        ("fastapi_violation", ["ADR-0000"]),
-        ("apirouter_violation", ["ADR-0002"]),
-        ("docker_violation", ["ADR-0004"]),
-        ("fastapi_valid", ["ADR-0000"]),
-        ("docker_valid", ["ADR-0004"]),
-    ])
+    @pytest.mark.parametrize(
+        "patch_name,expected_adrs",
+        [
+            ("fastapi_violation", ["ADR-0000"]),
+            ("apirouter_violation", ["ADR-0002"]),
+            ("docker_violation", ["ADR-0004"]),
+            ("fastapi_valid", ["ADR-0000"]),
+            ("docker_valid", ["ADR-0004"]),
+        ],
+    )
     def test_expected_adrs_in_retrieval(self, patch_name, expected_adrs, expectations, config, docker_fixture):
         spec = expectations[patch_name]
         patch_text = (PATCHES_DIR / spec["file"]).read_text()
@@ -130,14 +145,15 @@ class TestApexSRetrieval:
         retrieved_adrs = {f.adr_id for f in result.findings}
         missing = set(expected_adrs) - retrieved_adrs
 
-        assert not missing, (
-            f"{patch_name}: expected ADRs {missing} not in retrieved set {retrieved_adrs}"
-        )
+        assert not missing, f"{patch_name}: expected ADRs {missing} not in retrieved set {retrieved_adrs}"
 
-    @pytest.mark.parametrize("patch_name,expected_adrs", [
-        ("migration_violation", ["ADR-0001"]),
-        ("frontend_violation", ["ADR-0003"]),
-    ])
+    @pytest.mark.parametrize(
+        "patch_name,expected_adrs",
+        [
+            ("migration_violation", ["ADR-0001"]),
+            ("frontend_violation", ["ADR-0003"]),
+        ],
+    )
     def test_known_retrieval_limitations(self, patch_name, expected_adrs, expectations, config, docker_fixture):
         """Document known retrieval limitations: verify pipeline still runs."""
         spec = expectations[patch_name]
@@ -164,9 +180,10 @@ class TestApexSRetrieval:
 # Classification tests — require LLM API key
 # ---------------------------------------------------------------------------
 
+
 class TestApexSClassification:
     """Verify LLM classification behavior.
-    
+
     Uses the live Ollama model from .env. These tests are slow (~30s per pair).
     Requires Ollama to be running at localhost:11434.
     """
@@ -190,8 +207,7 @@ class TestApexSClassification:
 
         result = run_review(patch_text, repo_path=str(REPO_DIR), adr_dir=str(ADR_DIR), config=llm_config)
 
-        violations = {f.adr_id for f in result.findings
-                      if f.classification in ("violates", "likely_violates")}
+        violations = {f.adr_id for f in result.findings if f.classification in ("violates", "likely_violates")}
         assert "ADR-0000" in violations, (
             f"fastapi_violation: expected ADR-0000 classified as violation, "
             f"got: {[(f.adr_id, f.classification) for f in result.findings]}"
@@ -204,8 +220,7 @@ class TestApexSClassification:
 
         result = run_review(patch_text, repo_path=str(REPO_DIR), adr_dir=str(ADR_DIR), config=llm_config)
 
-        violations = [f for f in result.findings
-                      if f.classification in ("violates", "likely_violates")]
+        violations = [f for f in result.findings if f.classification in ("violates", "likely_violates")]
         # The patch is valid for ADR-0000 (FastAPI usage) but may have findings
         # for other ADRs (e.g., ADR-0002 if routes bypass APIRouter).
         # Check that ADR-0000 itself has no violations:

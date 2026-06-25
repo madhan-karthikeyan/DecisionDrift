@@ -13,7 +13,8 @@ class TestLLMClientInit:
         client = LLMClient(api_key="sk-test")
         assert client.available()
 
-    def test_not_available_without_api_key(self):
+    def test_not_available_without_api_key(self, monkeypatch):
+        monkeypatch.delenv("DECISIONDRIFT_LLM_API_KEY", raising=False)
         client = LLMClient(api_key=None)
         assert not client.available()
 

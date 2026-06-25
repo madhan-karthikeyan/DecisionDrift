@@ -3,8 +3,13 @@ from __future__ import annotations
 from pathlib import Path
 
 from decisiondrift.models.schema import DecisionRecord
-from decisiondrift.rules.engine import _extract_deps_from_file, _scan_api_calls, _scan_imports_in_diff, enforce_from_adrs
-from decisiondrift.rules.models import Action, Rule, RuleSet, RuleType
+from decisiondrift.rules.engine import (
+    _extract_deps_from_file,
+    _scan_api_calls,
+    _scan_imports_in_diff,
+    enforce_from_adrs,
+)
+from decisiondrift.rules.models import Action
 
 
 class TestDependencyExtraction:
@@ -18,13 +23,13 @@ class TestDependencyExtraction:
 
     def test_pyproject_toml(self, tmp_path: Path):
         f = tmp_path / "pyproject.toml"
-        f.write_text('''[project]
+        f.write_text("""[project]
 name = "test"
 dependencies = [
     "flask>=2.0",
     "redis",
 ]
-''')
+""")
         deps = _extract_deps_from_file(f)
         assert "flask" in deps
         assert "redis" in deps
@@ -35,6 +40,7 @@ class TestImportScanning:
         py_file = tmp_path / "app.py"
         py_file.write_text("import flask\nfrom redis import StrictRedis\nimport os\n")
         from decisiondrift.impact.models import ChangedFile
+
         files = [ChangedFile(path="app.py", language="python", change_type="modified")]
         imports = _scan_imports_in_diff(files, tmp_path)
         import_names = [imp for imp, _ in imports]
@@ -71,7 +77,7 @@ class TestDiffEnforcement:
     def test_block_on_dependency_violation(self, tmp_path: Path):
         req = tmp_path / "requirements.txt"
         req.write_text("flask==2.0\n")
-        diff = f"diff --git a/requirements.txt b/requirements.txt\n--- a/requirements.txt\n+++ b/requirements.txt\n@@ -0,0 +1 @@\n+flask==2.0\n"
+        diff = "diff --git a/requirements.txt b/requirements.txt\n--- a/requirements.txt\n+++ b/requirements.txt\n@@ -0,0 +1 @@\n+flask==2.0\n"
         adrs = [
             DecisionRecord(
                 id="ADR-0001",
@@ -89,7 +95,7 @@ class TestDiffEnforcement:
     def test_no_violations(self, tmp_path: Path):
         req = tmp_path / "requirements.txt"
         req.write_text("fastapi==0.100\n")
-        diff = f"diff --git a/requirements.txt b/requirements.txt\n--- a/requirements.txt\n+++ b/requirements.txt\n@@ -0,0 +1 @@\n+fastapi==0.100\n"
+        diff = "diff --git a/requirements.txt b/requirements.txt\n--- a/requirements.txt\n+++ b/requirements.txt\n@@ -0,0 +1 @@\n+fastapi==0.100\n"
         adrs = [
             DecisionRecord(
                 id="ADR-0001",

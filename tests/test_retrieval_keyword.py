@@ -1,12 +1,19 @@
 from __future__ import annotations
 
-import pytest
 from decisiondrift.models.schema import DecisionRecord
 from decisiondrift.retrieval.keyword import KeywordBackend
 
 
 class TestKeywordBackend:
-    def _make_adr(self, id: str, title: str, rationale: str = "", keywords: list[str] | None = None, evidence: list[str] | None = None, exceptions: str = "") -> DecisionRecord:
+    def _make_adr(
+        self,
+        id: str,
+        title: str,
+        rationale: str = "",
+        keywords: list[str] | None = None,
+        evidence: list[str] | None = None,
+        exceptions: str = "",
+    ) -> DecisionRecord:
         return DecisionRecord(
             id=id,
             title=title,
@@ -77,7 +84,8 @@ class TestKeywordBackend:
     def test_multiple_match_sources_combined(self):
         backend = KeywordBackend()
         adr = self._make_adr(
-            "ADR-001", "Use Celery for Async Tasks",
+            "ADR-001",
+            "Use Celery for Async Tasks",
             rationale="All background work uses Celery workers",
             keywords=["celery", "async", "task", "worker"],
             evidence=["backend/tasks/email_tasks.py"],

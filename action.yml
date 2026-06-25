@@ -1,5 +1,5 @@
 name: 'DecisionDrift Review'
-description: 'Decision-aware AI PR review — detects violations of documented architecture decisions.'
+description: 'PR review against documented ADRs — detects violations of architecture decisions. Supports deterministic enforce and AI-powered review modes.'
 author: 'DecisionDrift'
 branding:
   icon: 'check-circle'
@@ -7,7 +7,7 @@ branding:
 
 inputs:
   llm-api-key:
-    description: 'API key for the LLM provider (OpenAI / Groq / OpenRouter, or "ollama" for local).'
+    description: 'API key for the LLM provider (OpenAI / Groq / OpenRouter, or "ollama" for local). Omit for deterministic enforce-only mode.'
     required: false
   llm-model:
     description: 'LLM model name (e.g. gpt-4o, llama-3.3-70b-versatile, qwen2.5-coder:7b).'
@@ -24,6 +24,10 @@ inputs:
     description: 'Fail the CI check when violations are found.'
     required: false
     default: 'false'
+  min-confidence:
+    description: 'Minimum confidence threshold (0.0–1.0) for bootstrap candidates. Lower values generate more ADRs.'
+    required: false
+    default: '0.3'
   max-pairs:
     description: 'Maximum number of (ADR, symbol) pairs to classify.'
     required: false

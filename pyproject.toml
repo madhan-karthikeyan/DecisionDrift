@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "decisiondrift"
-version = "0.1.0"
+version = "1.0.0-beta.1"
 description = "Decision-aware AI PR review agent"
 requires-python = ">=3.11"
 dependencies = [
@@ -18,9 +18,23 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+dev = [
+    "black>=24.0",
+    "build>=1.0",
+    "coverage>=7.0",
+    "mypy>=2.0",
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "pytest-mock>=3.0",
+    "ruff>=0.5.0",
+]
 embeddings = [
     "fastembed>=0.3.0",
     "numpy>=1.24",
+]
+ast = [
+    "tree-sitter>=0.21.0",
+    "tree-sitter-languages>=1.10.0"
 ]
 
 [project.urls]
@@ -32,5 +46,44 @@ decisiondrift = "decisiondrift.cli:cli"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]
+
+[tool.black]
+line-length = 120
+target-version = ["py311"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-v --tb=short"
+markers = [
+    "unit: Unit tests (fast, no external dependencies)",
+    "integration: Integration tests (use temp repos, no network)",
+    "snapshot: CLI snapshot tests (uses syrupy)",
+]
+
+[tool.coverage.run]
+source = ["decisiondrift"]
+omit = [
+    "*/__pycache__/*",
+    "*/tests/*",
+    "*/egg-info/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+fail_under = 0
+
+[tool.coverage.html]
+directory = "coverage_html"

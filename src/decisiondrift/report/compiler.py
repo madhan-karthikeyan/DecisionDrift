@@ -25,6 +25,15 @@ def compile_text(
     """
     lines: list[str] = []
 
+    if not result.llm_available:
+        lines.append("LLM API key not configured.")
+        lines.append("")
+        lines.append("  The `review` command requires an LLM for semantic classification.")
+        lines.append("  Use `decisiondrift enforce --from-git` for deterministic, LLM-free checks.")
+        lines.append("")
+        lines.append(f"Scanned {result.files_scanned} file(s), {result.symbols_analyzed} symbol(s).")
+        return "\n".join(lines)
+
     # Rule engine findings
     if rule_findings:
         lines.append("## Deterministic Rule Findings")
@@ -123,7 +132,5 @@ def _violations_report(violations: list[Finding], result: ReviewResult) -> str:
         lines.append("")
 
     lines.append("---")
-    lines.append(
-        f"{len(violations)} violation(s) found across {result.files_scanned} file(s)."
-    )
+    lines.append(f"{len(violations)} violation(s) found across {result.files_scanned} file(s).")
     return "\n".join(lines)

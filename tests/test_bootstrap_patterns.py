@@ -56,11 +56,6 @@ class TestPatternMatcher:
         match_names = [m.pattern.name for m in matches]
         assert "Separate Frontend Application" in match_names
 
-    def test_matches_role_based_access_control(self):
-        structure = scan_repo(HMS_V2)
-        matches = match_patterns(structure)
-        match_names = [m.pattern.name for m in matches]
-
     def test_match_has_evidence(self):
         structure = scan_repo(HMS_V2)
         matches = match_patterns(structure)
@@ -69,6 +64,7 @@ class TestPatternMatcher:
 
     def test_empty_structure_returns_no_matches(self):
         from decisiondrift.bootstrap.structure_scan import ProjectStructure
+
         empty = ProjectStructure(root="/tmp")
         matches = match_patterns(empty)
         assert matches == []

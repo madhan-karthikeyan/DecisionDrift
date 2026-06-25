@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from enum import Enum
-from typing import Literal, Optional
+from enum import StrEnum
+from typing import Literal
 
 from pydantic import BaseModel
 
 
-class ConfidenceLevel(str, Enum):
+class ConfidenceLevel(StrEnum):
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
@@ -20,24 +20,24 @@ class DecisionRecord(BaseModel):
     title: str
     status: Literal["proposed", "accepted", "rejected", "deprecated", "superseded"]
     severity: Literal["critical", "high", "medium", "low"]
-    type: Optional[str] = None
+    type: str | None = None
     source: Literal["manual", "bootstrap", "ingest"] = "manual"
-    superseded_by: Optional[str] = None
-    rejected_reason: Optional[str] = None
+    superseded_by: str | None = None
+    rejected_reason: str | None = None
     rationale: str = ""
     prohibitions: list[str] = []
-    exceptions: Optional[str] = None
+    exceptions: str | None = None
     alternatives_rejected: list[str] = []
     related_links: list[str] = []
     keywords: list[str] = []
     evidence: list[str] = []
-    date: Optional[str] = None
-    confidence: Optional[ConfidenceLevel] = None
-    owner: Optional[str] = None
-    review_after: Optional[str] = None
-    expires_after: Optional[str] = None
-    depends_on: Optional[str] = None
-    embedding: Optional[list[float]] = None
+    date: str | None = None
+    confidence: ConfidenceLevel | None = None
+    owner: str | None = None
+    review_after: str | None = None
+    expires_after: str | None = None
+    depends_on: str | None = None
+    embedding: list[float] | None = None
 
 
 class ImpactedSymbol(BaseModel):
@@ -74,6 +74,7 @@ class ReviewResult(BaseModel):
     symbols_analyzed: int = 0
     adrs_considered: int = 0
     rules_evaluated: int = 0
+    llm_available: bool = True
 
 
 ENFORCEMENT_ACTIONS = {
@@ -91,9 +92,7 @@ ADR_SCHEMA = {
     "properties": {
         "id": {"type": "string", "pattern": r"^ADR-\d{4}$"},
         "title": {"type": "string"},
-        "status": {
-            "enum": ["proposed", "accepted", "rejected", "deprecated", "superseded"]
-        },
+        "status": {"enum": ["proposed", "accepted", "rejected", "deprecated", "superseded"]},
         "severity": {"enum": ["critical", "high", "medium", "low"]},
         "type": {"type": "string"},
         "source": {"enum": ["manual", "bootstrap", "ingest"]},

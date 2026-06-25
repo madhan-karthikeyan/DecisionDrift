@@ -53,16 +53,18 @@ def compute_retrieval_metrics() -> dict:
         if top1_hit:
             top1_hits += 1
 
-        results.append({
-            "name": name,
-            "expected": spec["expected_adrs"],
-            "retrieved": sorted(retrieved_adrs),
-            "top5_hit": any_hit,
-            "top1_hit": top1_hit,
-            "files_scanned": result.files_scanned,
-            "symbols_analyzed": result.symbols_analyzed,
-            "adrs_considered": result.adrs_considered,
-        })
+        results.append(
+            {
+                "name": name,
+                "expected": spec["expected_adrs"],
+                "retrieved": sorted(retrieved_adrs),
+                "top5_hit": any_hit,
+                "top1_hit": top1_hit,
+                "files_scanned": result.files_scanned,
+                "symbols_analyzed": result.symbols_analyzed,
+                "adrs_considered": result.adrs_considered,
+            }
+        )
 
     return {
         "total": total,
@@ -84,8 +86,7 @@ def compute_classification_metrics() -> dict:
 
     for name, spec in expectations.items():
         _, result = run_patch(name)
-        violations = {f.adr_id for f in result.findings
-                      if f.classification in ("violates", "likely_violates")}
+        violations = {f.adr_id for f in result.findings if f.classification in ("violates", "likely_violates")}
         expected_set = set(spec["expected_adrs"])
 
         is_violation_patch = spec["expected_classification"] in ("violates", "likely_violates")
@@ -104,13 +105,15 @@ def compute_classification_metrics() -> dict:
             else:
                 tn += 1
 
-        results.append({
-            "name": name,
-            "is_violation": is_violation_patch,
-            "primary_adr": primary,
-            "found_in_violations": found,
-            "classifications": {f.adr_id: f.classification for f in result.findings},
-        })
+        results.append(
+            {
+                "name": name,
+                "is_violation": is_violation_patch,
+                "primary_adr": primary,
+                "found_in_violations": found,
+                "classifications": {f.adr_id: f.classification for f in result.findings},
+            }
+        )
 
     precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
     recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
@@ -132,15 +135,13 @@ class TestRetrievalMetrics:
     def test_recall_at_5(self):
         metrics = compute_retrieval_metrics()
         assert metrics["recall_at_5"] >= 0.5, (
-            f"Retrieval Recall@5 = {metrics['recall_at_5']:.2f} "
-            f"({metrics['top5_hits']}/{metrics['total']})"
+            f"Retrieval Recall@5 = {metrics['recall_at_5']:.2f} ({metrics['top5_hits']}/{metrics['total']})"
         )
 
     def test_recall_at_1(self):
         metrics = compute_retrieval_metrics()
         assert metrics["recall_at_1"] >= 0.3, (
-            f"Retrieval Recall@1 = {metrics['recall_at_1']:.2f} "
-            f"({metrics['top1_hits']}/{metrics['total']})"
+            f"Retrieval Recall@1 = {metrics['recall_at_1']:.2f} ({metrics['top1_hits']}/{metrics['total']})"
         )
 
     def test_all_patches_produce_findings(self):
@@ -170,6 +171,4 @@ class TestClassificationMetrics:
     @pytest.mark.skipif(not HAS_API_KEY, reason="DECISIONDRIFT_LLM_API_KEY not set")
     def test_f1_score(self):
         metrics = compute_classification_metrics()
-        assert metrics["f1"] >= 0.3, (
-            f"Classification F1 = {metrics['f1']:.2f}"
-        )
+        assert metrics["f1"] >= 0.3, f"Classification F1 = {metrics['f1']:.2f}"

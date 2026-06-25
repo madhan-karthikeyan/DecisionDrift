@@ -3,43 +3,14 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from typing import Optional
-
 from decisiondrift.adr.parser import parse_adr_file
-from decisiondrift.bootstrap.architecture import ArchitectureModel
-from decisiondrift.bootstrap.detectors import (
-    DetectionContext,
-    collect_deps,
-    detect_technologies,
-)
-from decisiondrift.bootstrap.structure_scan import scan_repo
 from decisiondrift.bootstrap.template_generator import (
     apply_suggestions,
-    generate_suggestions,
 )
-from decisiondrift.bootstrap.synthesis import generate_suggestions_llm
-from decisiondrift.config import load_config
-from decisiondrift.rules.scanner import scan_imports
-
-
-def _detect_architecture(repo_path: str) -> Optional[ArchitectureModel]:
-    """Run technology detection and return architecture model.
-    Used by audit CLI for coverage analysis.
-    """
-    try:
-        structure = scan_repo(repo_path)
-        ctx = DetectionContext(
-            repo_path=Path(repo_path),
-            deps=collect_deps(Path(repo_path)),
-            imports=scan_imports(repo_path),
-            structure=structure,
-        )
-        findings = detect_technologies(ctx)
-        if not findings:
-            return None
-        return ArchitectureModel(findings)
-    except Exception:
-        return None
+from decisiondrift.bootstrap.v3 import (
+    build_repository_model,
+    generate_v3_suggestions,
+)
 
 
 def bootstrap(
@@ -56,27 +27,20 @@ def bootstrap(
         adr_dir: Path to existing ADR directory.
         dry_run: If True, print candidates without writing.
         min_confidence: Minimum confidence threshold ("low", "medium", "high").
-        use_llm: If True, use LLM for ADR synthesis (requires API key).
-                 LLM is opt-in — templates are the default.
+        use_llm: Deprecated in Bootstrap V3. Deterministic evidence-based
+                 inference is always used.
     """
     print(f"Scanning repository: {repo_path}")
+    if use_llm:
+        print("  LLM bootstrap synthesis is disabled in Bootstrap V3; using deterministic inference.")
 
-    structure = scan_repo(repo_path)
-    ctx = DetectionContext(
-        repo_path=Path(repo_path),
-        deps=collect_deps(Path(repo_path)),
-        imports=scan_imports(repo_path),
-        structure=structure,
-    )
-
-    findings = detect_technologies(ctx)
-    if not findings:
+    model = build_repository_model(repo_path)
+    if not model.technologies:
         print("  No technologies detected.")
         return []
 
-    model = ArchitectureModel(findings)
-
-    print(f"\n{model.summary()}")
+    print()
+    print(_repository_summary(model))
 
     # Load existing ADRs for dedup
     existing_ids: set[str] = set()
@@ -94,28 +58,16 @@ def bootstrap(
                 if record:
                     existing_titles.add(record.title)
 
-    # Route to LLM or template generation
-    if use_llm:
-        from decisiondrift.llm.client import LLMClient
-        cfg = load_config()
-        llm = LLMClient(
-            model=cfg["llm"]["model"],
-            api_key=cfg["llm"]["api_key"],
-            base_url=cfg["llm"].get("base_url"),
-        )
-        if llm.available():
-            suggestions = generate_suggestions_llm(model, existing_titles, next_id, llm)
-            if not suggestions:
-                print("  LLM synthesis returned no ADRs. Falling back to templates.")
-                suggestions = generate_suggestions(model, existing_ids, existing_titles, next_id)
-        else:
-            print("  No LLM API key configured. Falling back to templates.")
-            suggestions = generate_suggestions(model, existing_ids, existing_titles, next_id)
-    else:
-        suggestions = generate_suggestions(model, existing_ids, existing_titles, next_id)
+    suggestions = generate_v3_suggestions(model, existing_titles, next_id, min_confidence=min_confidence)
 
     if not suggestions:
-        print("  No new ADRs to suggest (all already documented).")
+        print("  No enforceable ADRs to suggest.")
+        suppressed = _suppressed_summary(model)
+        if suppressed:
+            print()
+            print("  Suppressed candidates:")
+            for line in suppressed:
+                print(f"    - {line}")
         return []
 
     print(f"  Suggested ADRs: {len(suggestions)}")
@@ -124,7 +76,7 @@ def bootstrap(
 
     if dry_run:
         print(f"{'=' * 60}")
-        print(f"DRY RUN — no files written")
+        print("DRY RUN — no files written")
         print(f"Run with --apply to write ADRs to {adr_dir}")
         print(f"{'=' * 60}")
         print()
@@ -136,3 +88,30 @@ def bootstrap(
         print(f"Wrote {count} ADR(s) to {adr_dir}")
 
     return suggestions
+
+
+def _repository_summary(model) -> str:
+    lines = [
+        "Repository Summary",
+        "",
+        f"  Role: {model.repository_role}",
+        f"  Evidence records: {len(model.evidence)}",
+        "  Technologies:",
+    ]
+    for tech in model.technologies:
+        suffix = f" ({tech.suppress_reason})" if tech.suppress_reason else ""
+        lines.append(f"    {tech.name} [{tech.category}] {tech.evidence_level.value}/{tech.role}{suffix}")
+    lines.append("")
+    lines.append(f"  Governance candidates: {len(model.governance_candidates)}")
+    return "\n".join(lines)
+
+
+def _suppressed_summary(model) -> list[str]:
+    lines: list[str] = []
+    for tech in model.technologies:
+        if tech.suppress_reason:
+            lines.append(f"{tech.name}: {tech.suppress_reason}")
+    for candidate in model.governance_candidates:
+        if candidate.suppress_reason:
+            lines.append(f"{candidate.title}: {candidate.suppress_reason}")
+    return lines[:12]

@@ -146,11 +146,13 @@ def match_patterns(structure: ProjectStructure) -> list[PatternMatch]:
             continue
 
         reason = f"Found indicators: {', '.join(evidence[:4])}"
-        matches.append(PatternMatch(
-            pattern=pattern,
-            confidence=pattern.confidence,
-            evidence=evidence,
-            reason=reason,
-        ))
+        matches.append(
+            PatternMatch(
+                pattern=pattern,
+                confidence=pattern.confidence,
+                evidence=evidence,
+                reason=reason,
+            )
+        )
 
     return matches

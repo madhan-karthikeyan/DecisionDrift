@@ -64,16 +64,12 @@ class LLMClient:
     def _call(self, prompt: str, system_prompt: str | None = None, **kwargs) -> Any:
         """Internal: make the API call."""
         if not self.api_key:
-            raise LLMResponseError(
-                "No API key configured. Set DECISIONDRIFT_LLM_API_KEY or pass api_key."
-            )
+            raise LLMResponseError("No API key configured. Set DECISIONDRIFT_LLM_API_KEY or pass api_key.")
 
         try:
             from openai import OpenAI
         except ImportError:
-            raise LLMResponseError(
-                "openai package not installed. Run: pip install openai"
-            )
+            raise LLMResponseError("openai package not installed. Run: pip install openai")
 
         client_kwargs: dict[str, Any] = {"api_key": self.api_key, "timeout": 120}
         if self.base_url:

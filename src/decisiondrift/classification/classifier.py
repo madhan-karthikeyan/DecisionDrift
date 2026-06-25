@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from decisiondrift.classification.models import ClassificationInput, ClassificationResult
 from decisiondrift.classification.prompts import (
-    CLASSIFICATION_SCHEMA,
     SYSTEM_PROMPT,
     build_user_prompt,
 )
 from decisiondrift.llm.client import LLMClient
-from decisiondrift.models.schema import Classification, EvidenceStrength, Finding
+from decisiondrift.models.schema import Finding
 
 
 class Classifier:

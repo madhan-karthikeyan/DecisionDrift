@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 from dotenv import load_dotenv
 
 
-def find_config(start_path: Path | None = None) -> Optional[Path]:
+def find_config(start_path: Path | None = None) -> Path | None:
     load_dotenv()
     path = start_path or Path.cwd()
     for candidate in ("decisiondrift.yml", ".decisiondrift.yml"):

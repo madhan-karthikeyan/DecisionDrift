@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pytest
 from decisiondrift.impact.diff_parser import parse_diff
 
 

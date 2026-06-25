@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from enum import Enum
-from typing import Literal, Optional
+from enum import StrEnum
+from typing import Literal
 
 from pydantic import BaseModel
 
 from decisiondrift.models.schema import ConfidenceLevel
 
 
-class RuleType(str, Enum):
+class RuleType(StrEnum):
     DEPENDENCY = "dependency"
     IMPORT = "import"
     API = "api"
@@ -16,7 +16,7 @@ class RuleType(str, Enum):
     CONFIG = "config"
 
 
-class Action(str, Enum):
+class Action(StrEnum):
     BLOCK = "block"
     REQUIRE_APPROVAL = "require_approval"
     WARN = "warn"
@@ -46,8 +46,8 @@ class RuleSet(BaseModel):
 class RuleMatch(BaseModel):
     rule: Rule
     matched_value: str
-    file_path: Optional[str] = None
-    line_number: Optional[int] = None
+    file_path: str | None = None
+    line_number: int | None = None
 
 
 class EnforcementFinding(BaseModel):
@@ -58,7 +58,7 @@ class EnforcementFinding(BaseModel):
     action: Action
     severity: Literal["critical", "high", "medium", "low"]
     match_value: str
-    file_path: Optional[str] = None
+    file_path: str | None = None
     description: str = ""
 
 

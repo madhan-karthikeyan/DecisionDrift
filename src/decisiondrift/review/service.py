@@ -60,7 +60,21 @@ def run_review(
     if config is None:
         config = load_config()
 
+    classifier = Classifier(
+        model=config["llm"]["model"],
+        api_key=config["llm"]["api_key"],
+        base_url=config["llm"].get("base_url"),
+    )
+    llm_available = classifier.llm.available()
+
     impact = analyze_diff(diff_text, repo_path=repo_path)
+
+    if not llm_available:
+        return ReviewResult(
+            files_scanned=len(impact.files),
+            symbols_analyzed=len(impact.symbols),
+            llm_available=False,
+        )
 
     if not impact.symbols:
         return ReviewResult(
@@ -79,17 +93,11 @@ def run_review(
 
     hunks = _extract_hunks(diff_text)
 
-    backend = KeywordBackend()
-    classifier = Classifier(
-        model=config["llm"]["model"],
-        api_key=config["llm"]["api_key"],
-        base_url=config["llm"].get("base_url"),
-    )
-
     threshold = config.get("similarity_threshold", 0.5)
     top_k = config.get("top_k", 5)
     max_pairs = config.get("max_pairs_per_pr", 15)
 
+    backend = KeywordBackend()
     inputs: list[ClassificationInput] = []
     pairs_used = 0
 

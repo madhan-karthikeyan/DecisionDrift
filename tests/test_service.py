@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import tempfile
 from pathlib import Path
 
-import pytest
 from decisiondrift.impact.service import analyze_diff
 
 
@@ -28,7 +26,7 @@ def helper_util():
     pass
 """)
 
-        diff = f"""diff --git a/backend/services/user_service.py b/backend/services/user_service.py
+        diff = """diff --git a/backend/services/user_service.py b/backend/services/user_service.py
 index abc..def 100644
 --- a/backend/services/user_service.py
 +++ b/backend/services/user_service.py
@@ -66,7 +64,7 @@ index abc..def 100644
         repo = tmp_path / "repo"
         repo.mkdir()
 
-        diff = f"""diff --git a/backend/old.py b/dev/null
+        diff = """diff --git a/backend/old.py b/dev/null
 deleted file mode 100644
 index abc..000 100644
 --- a/backend/old.py

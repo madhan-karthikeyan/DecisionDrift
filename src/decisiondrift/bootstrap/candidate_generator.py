@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 from decisiondrift.adr.loader import load_adrs
@@ -21,7 +21,7 @@ class CandidateADR:
         lines = [
             f"[{self.confidence.upper()}] {self.pattern_name}",
             "",
-            f"Proposed ADR:",
+            "Proposed ADR:",
             f"  {self.adr.title}",
             "",
             "Context:",
@@ -77,8 +77,10 @@ def _is_duplicate(
 ) -> tuple[bool, str | None]:
     for record in existing:
         score = _keyword_overlap(
-            candidate_title, candidate_keywords,
-            record.title, record.keywords,
+            candidate_title,
+            candidate_keywords,
+            record.title,
+            record.keywords,
         )
         if score >= threshold:
             return True, record.id
@@ -152,12 +154,14 @@ def generate_candidates(
             evidence=match.evidence,
         )
 
-        candidates.append(CandidateADR(
-            adr=adr,
-            pattern_name=pattern.name,
-            confidence=pattern.confidence,
-            evidence=match.evidence,
-        ))
+        candidates.append(
+            CandidateADR(
+                adr=adr,
+                pattern_name=pattern.name,
+                confidence=pattern.confidence,
+                evidence=match.evidence,
+            )
+        )
 
     return candidates
 

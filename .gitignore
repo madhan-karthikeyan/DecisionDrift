@@ -4,3 +4,11 @@ venv/
 __pycache__/
 *.pyc
 .env
+.coverage
+htmlcov/
+__snapshots__/
+dist/
+build/
+*.egg-info/
+.coverage
+coverage_html/

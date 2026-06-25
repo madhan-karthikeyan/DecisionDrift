@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pytest
 from decisiondrift.impact.ast_python import extract_symbols
 
 

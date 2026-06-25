@@ -66,7 +66,6 @@ def scan_repo(repo_path: str | Path, max_depth: int = MAX_DEPTH) -> ProjectStruc
     if not root.is_dir():
         raise NotADirectoryError(f"{root} is not a directory")
 
-    seen: set[Path] = set()
     dirs: list[str] = []
     files: list[str] = []
     indicator_files: list[str] = []

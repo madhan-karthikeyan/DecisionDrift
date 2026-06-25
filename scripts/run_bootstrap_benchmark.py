@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Run Bootstrap V2 stability benchmark.
+"""Run Bootstrap V3 stability benchmark.
 
 Measures, for each repo:
   - Crash-free completion
-  - Technologies detected (count + confidence distribution)
-  - ADRs generated (count, duplicates)
+  - Technology candidates (count + evidence distribution)
+  - Suppressed candidates
+  - Enforceable ADRs generated (count, duplicates)
   - Latency (detection + total)
 
 Usage:
@@ -22,7 +23,7 @@ from pathlib import Path
 
 import yaml
 
-from decisiondrift.bootstrap.bootstrapper import _detect_architecture
+from decisiondrift.bootstrap.v3 import build_repository_model, generate_v3_suggestions
 
 BENCHMARKS_DIR = Path(__file__).parent.parent / "benchmarks"
 BENCHMARK_SPEC = BENCHMARKS_DIR / "bootstrap.yaml"
@@ -36,6 +37,7 @@ def run_benchmark(spec_path: Path, repos_dir: Path) -> dict:
 
     results = []
     total_techs = Counter()
+    total_suppressed = 0
     total_adrs = 0
     total_dupes = 0
     total_latency = 0.0
@@ -46,22 +48,26 @@ def run_benchmark(spec_path: Path, repos_dir: Path) -> dict:
         repo_path = repos_dir / name
 
         if not repo_path.exists():
-            results.append({
-                "name": name,
-                "status": "skipped",
-                "error": "not cloned",
-            })
+            results.append(
+                {
+                    "name": name,
+                    "status": "skipped",
+                    "error": "not cloned",
+                }
+            )
             continue
 
         t0 = time.time()
         try:
-            model = _detect_architecture(str(repo_path))
+            model = build_repository_model(repo_path)
         except Exception as e:
-            results.append({
-                "name": name,
-                "status": "crashed",
-                "error": str(e),
-            })
+            results.append(
+                {
+                    "name": name,
+                    "status": "crashed",
+                    "error": str(e),
+                }
+            )
             crashed += 1
             continue
 
@@ -69,53 +75,44 @@ def run_benchmark(spec_path: Path, repos_dir: Path) -> dict:
         latency = t1 - t0
         total_latency += latency
 
-        if model is None:
-            results.append({
-                "name": name,
-                "status": "ok",
-                "tech_count": 0,
-                "adr_count": 0,
-                "duplicate_adrs": 0,
-                "confidence_distribution": {},
-                "latency": latency,
-            })
-            continue
-
-        # Technology confidence distribution
+        # Technology evidence distribution
         conf_dist: dict[str, int] = Counter()
-        for f in model.findings:
-            if f.confidence >= 0.85:
-                conf_dist["high"] = conf_dist.get("high", 0) + 1
-            elif f.confidence >= 0.7:
-                conf_dist["medium"] = conf_dist.get("medium", 0) + 1
-            else:
-                conf_dist["low"] = conf_dist.get("low", 0) + 1
+        for tech in model.technologies:
+            conf_dist[tech.evidence_level.value] = conf_dist.get(tech.evidence_level.value, 0) + 1
 
-        total_techs["high"] += conf_dist.get("high", 0)
-        total_techs["medium"] += conf_dist.get("medium", 0)
-        total_techs["low"] += conf_dist.get("low", 0)
+        total_techs["strong"] += conf_dist.get("strong", 0)
+        total_techs["moderate"] += conf_dist.get("moderate", 0)
+        total_techs["weak"] += conf_dist.get("weak", 0)
 
-        # Generate suggestions (template-based, same as CLI default)
-        from decisiondrift.bootstrap.suggester import generate_suggestions
-        suggestions = generate_suggestions(model, set(), set(), 1)
+        suggestions = generate_v3_suggestions(model, set(), 1)
         adr_count = len(suggestions)
         total_adrs += adr_count
+        suppressed = [t for t in model.technologies if t.suppress_reason]
+        suppressed_candidates = [c for c in model.governance_candidates if c.suppress_reason]
+        total_suppressed += len(suppressed) + len(suppressed_candidates)
 
         # Duplicate check within this repo's suggestions
         titles = [s.adr.title for s in suggestions]
         dupes = len(titles) - len(set(titles))
         total_dupes += dupes
 
-        results.append({
-            "name": name,
-            "status": "ok",
-            "tech_count": model.count(),
-            "adr_count": adr_count,
-            "duplicate_adrs": dupes,
-            "confidence_distribution": dict(conf_dist),
-            "detected_technologies": [f.name for f in model.findings],
-            "latency": latency,
-        })
+        results.append(
+            {
+                "name": name,
+                "status": "ok",
+                "repo_role": model.repository_role,
+                "repo_subtype": model.repository_subtype,
+                "tech_count": len(model.technologies),
+                "adr_count": adr_count,
+                "duplicate_adrs": dupes,
+                "confidence_distribution": dict(conf_dist),
+                "detected_technologies": [t.name for t in model.technologies],
+                "suppressed_technologies": [f"{t.name}: {t.suppress_reason}" for t in suppressed[:8]],
+                "suppressed_candidates": [f"{c.title}: {c.suppress_reason}" for c in suppressed_candidates[:8]],
+                "adrs": [s.adr.title for s in suggestions],
+                "latency": latency,
+            }
+        )
 
     ran = [r for r in results if r["status"] == "ok"]
     skipped = [r for r in results if r["status"] == "skipped"]
@@ -128,6 +125,7 @@ def run_benchmark(spec_path: Path, repos_dir: Path) -> dict:
             "skipped": len(skipped),
             "crashed": crashed,
             "total_technologies": dict(total_techs),
+            "total_suppressed": total_suppressed,
             "total_adrs": total_adrs,
             "total_duplicates": total_dupes,
             "total_latency": round(total_latency, 1),
@@ -139,20 +137,21 @@ def run_benchmark(spec_path: Path, repos_dir: Path) -> dict:
 def _format_report(data: dict) -> str:
     s = data["summary"]
     lines = [
-        "# Bootstrap V2 Benchmark Report",
+        "# Bootstrap V3 Benchmark Report",
         "",
-        f"**Date:** 2026-06-23",
+        "**Date:** 2026-06-23",
         f"**Repos:** {s['ran']} evaluated, {s['skipped']} skipped, {s['crashed']} crashed",
         "",
         "---",
         "",
         "## Aggregate Metrics",
         "",
-        f"  Technologies detected: {sum(s['total_technologies'].values())} "
-        f"(high={s['total_technologies'].get('high', 0)}, "
-        f"medium={s['total_technologies'].get('medium', 0)}, "
-        f"low={s['total_technologies'].get('low', 0)})",
-        f"  ADRs generated: {s['total_adrs']} ({s['total_duplicates']} duplicates)",
+        f"  Technology candidates: {sum(s['total_technologies'].values())} "
+        f"(strong={s['total_technologies'].get('strong', 0)}, "
+        f"moderate={s['total_technologies'].get('moderate', 0)}, "
+        f"weak={s['total_technologies'].get('weak', 0)})",
+        f"  Suppressed findings/candidates: {s['total_suppressed']}",
+        f"  Enforceable ADRs generated: {s['total_adrs']} ({s['total_duplicates']} duplicates)",
         f"  Average latency: {s['avg_latency']}s",
         f"  Crash rate: {s['crashed']}/{s['total']}",
         "",
@@ -175,12 +174,35 @@ def _format_report(data: dict) -> str:
             lines.append("")
             continue
 
-        lines.append(f"**Status:** ✓")
+        lines.append("**Status:** ✓")
+        lines.append(f"**Repository role:** {r['repo_role']} ({r['repo_subtype']})")
         lines.append(f"**Technologies:** {r['tech_count']} ({r['latency']:.1f}s)")
         if r["detected_technologies"]:
             lines.append(f"**Detected:** {', '.join(r['detected_technologies'])}")
-        lines.append(f"**ADRs:** {r['adr_count']} ({r['duplicate_adrs']} duplicates)")
-        lines.append(f"**Confidence:** {r['confidence_distribution']}")
+        if r["suppressed_technologies"]:
+            lines.append(f"**Suppressed technologies:** {'; '.join(r['suppressed_technologies'])}")
+        if r["suppressed_candidates"]:
+            lines.append(f"**Suppressed candidates:** {'; '.join(r['suppressed_candidates'])}")
+        lines.append(f"**Enforceable ADRs:** {r['adr_count']} ({r['duplicate_adrs']} duplicates)")
+        if r["adrs"]:
+            lines.append(f"**ADR titles:** {', '.join(r['adrs'])}")
+            lines.append("")
+            lines.append("**Manual ADR review:**")
+            lines.append("For each ADR, mark: [approve/reject/unsure] and provide brief reason")
+            for title in r["adrs"]:
+                lines.append(f"  - [ ] {title}")
+                lines.append("    Decision: __ | Reason: __")
+        if r["suppressed_technologies"] or r["suppressed_candidates"]:
+            lines.append("")
+            lines.append("**Manual suppression review:**")
+            lines.append("For each suppression, mark: [correct/incorrect/unsure] and provide brief reason")
+            for item in r["suppressed_technologies"][:5]:
+                lines.append(f"  - [ ] {item}")
+                lines.append("    Decision: __ | Reason: __")
+            for item in r["suppressed_candidates"][:5]:
+                lines.append(f"  - [ ] {item}")
+                lines.append("    Decision: __ | Reason: __")
+        lines.append(f"**Evidence:** {r['confidence_distribution']}")
         lines.append("")
         lines.append("---")
         lines.append("")
@@ -191,7 +213,7 @@ def _format_report(data: dict) -> str:
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description="Run Bootstrap V2 stability benchmark")
+    parser = argparse.ArgumentParser(description="Run Bootstrap V3 stability benchmark")
     parser.add_argument("--repos", default=str(DEFAULT_REPOS_DIR), help="Path to cloned repos")
     parser.add_argument("--spec", default=str(BENCHMARK_SPEC), help="Path to benchmark YAML")
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT), help="Output report path")
@@ -208,7 +230,7 @@ def main():
         print(f"Warning: repos dir not found: {repos_dir}")
         print("Run `python scripts/clone_benchmark_repos.py` first.")
 
-    print(f"Running Bootstrap V2 benchmark...")
+    print("Running Bootstrap V3 benchmark...")
     print(f"  Spec:  {spec_path}")
     print(f"  Repos: {repos_dir}")
     print()
@@ -222,8 +244,9 @@ def main():
 
     s = data["summary"]
     print(f"Evaluated: {s['ran']} repos ({s['skipped']} skipped, {s['crashed']} crashed)")
-    print(f"  Technologies: {sum(s['total_technologies'].values())}")
-    print(f"  ADRs generated: {s['total_adrs']} ({s['total_duplicates']} dupes)")
+    print(f"  Technology candidates: {sum(s['total_technologies'].values())}")
+    print(f"  Suppressed findings/candidates: {s['total_suppressed']}")
+    print(f"  Enforceable ADRs generated: {s['total_adrs']} ({s['total_duplicates']} dupes)")
     print(f"  Avg latency: {s['avg_latency']}s")
     print(f"Report: {output_path}")
 

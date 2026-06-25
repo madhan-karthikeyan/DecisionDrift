@@ -48,12 +48,20 @@ class TestRuleGenerator:
         assert len(rules) == 0
 
     def test_rules_from_source_confidence(self):
-        manual = DecisionRecord(id="ADR-01", title="Manual", status="accepted", severity="high",
-                                source="manual", prohibitions=["foo"])
-        bootstrap = DecisionRecord(id="ADR-02", title="Bootstrap", status="accepted", severity="medium",
-                                   source="bootstrap", prohibitions=["bar"])
-        ingest = DecisionRecord(id="ADR-03", title="Ingest", status="accepted", severity="low",
-                                source="ingest", prohibitions=["baz"])
+        manual = DecisionRecord(
+            id="ADR-01", title="Manual", status="accepted", severity="high", source="manual", prohibitions=["foo"]
+        )
+        bootstrap = DecisionRecord(
+            id="ADR-02",
+            title="Bootstrap",
+            status="accepted",
+            severity="medium",
+            source="bootstrap",
+            prohibitions=["bar"],
+        )
+        ingest = DecisionRecord(
+            id="ADR-03", title="Ingest", status="accepted", severity="low", source="ingest", prohibitions=["baz"]
+        )
         manual_rules = _rules_for_adr(manual)
         bootstrap_rules = _rules_for_adr(bootstrap)
         ingest_rules = _rules_for_adr(ingest)

@@ -4,11 +4,8 @@ from pathlib import Path
 
 from decisiondrift.bootstrap.architecture import ArchitectureModel
 from decisiondrift.bootstrap.detectors import (
-    DetectionContext,
     DetectedTechnology,
-    _scan_requirements_txt,
-    _scan_pyproject_toml_deps,
-    _scan_package_json_deps,
+    DetectionContext,
     collect_deps,
     detect_technologies,
 )
@@ -23,17 +20,13 @@ class TestCollectDeps:
         assert "redis" in deps
 
     def test_pyproject_toml_deps(self, tmp_path: Path):
-        (tmp_path / "pyproject.toml").write_text(
-            '[project]\ndependencies = ["fastapi>=0.100", "uvicorn"]\n'
-        )
+        (tmp_path / "pyproject.toml").write_text('[project]\ndependencies = ["fastapi>=0.100", "uvicorn"]\n')
         deps = collect_deps(tmp_path)
         assert "fastapi" in deps
         assert "uvicorn" in deps
 
     def test_package_json(self, tmp_path: Path):
-        (tmp_path / "package.json").write_text(
-            '{"dependencies": {"express": "^4.0", "react": "^18.0"}}'
-        )
+        (tmp_path / "package.json").write_text('{"dependencies": {"express": "^4.0", "react": "^18.0"}}')
         deps = collect_deps(tmp_path)
         assert "express" in deps
         assert "react" in deps
@@ -109,31 +102,37 @@ class TestDetectTechnologies:
 class TestMatchDep:
     def test_exact_match(self):
         from decisiondrift.bootstrap.detectors import _match_dep
+
         assert _match_dep("flask", "flask")
         assert _match_dep("fastapi", "fastapi")
 
     def test_submodule_match(self):
         from decisiondrift.bootstrap.detectors import _match_dep
+
         assert _match_dep("sqlalchemy.orm", "sqlalchemy")
         assert _match_dep("sqlalchemy.ext.declarative", "sqlalchemy")
 
     def test_go_module_match(self):
         from decisiondrift.bootstrap.detectors import _match_dep
+
         assert _match_dep("github.com/gin-gonic/gin", "gin-gonic/gin")
         assert _match_dep("github.com/goccy/go-json", "go-json")
 
     def test_java_artifact_match(self):
         from decisiondrift.bootstrap.detectors import _match_dep
+
         assert _match_dep("spring-boot-starter-web", "spring-boot")
         assert _match_dep("spring-boot-starter-actuator", "spring-boot")
 
     def test_extras_match(self):
         from decisiondrift.bootstrap.detectors import _match_dep
+
         assert _match_dep("psycopg[binary]", "psycopg")
         assert _match_dep("pydantic[email]", "pydantic")
 
     def test_no_match(self):
         from decisiondrift.bootstrap.detectors import _match_dep
+
         assert not _match_dep("flask", "django")
         assert not _match_dep("requests", "fastapi")
 

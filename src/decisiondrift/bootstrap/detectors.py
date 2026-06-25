@@ -22,107 +22,112 @@ class DetectionContext:
     structure: ProjectStructure
 
 
-TECHNOLOGY_REGISTRY: list[tuple[str, str, list[str] | None, list[str] | None, list[str] | None, float, float, float]] = [
+TECHNOLOGY_REGISTRY: list[
+    tuple[str, str, list[str] | None, list[str] | None, list[str] | None, float, float, float]
+] = [
     # (category, name, dep_names, import_names, indicator_files, dep_conf, import_conf, file_conf)
-
     # --- Frameworks ---
-    ("framework", "FastAPI",        ["fastapi", "uvicorn"],           None,           None,                   0.95, 0.90, 0.0),
-    ("framework", "Flask",          ["flask"],                       ["flask"],      None,                   0.95, 0.90, 0.0),
-    ("framework", "Django",         ["django"],                      None,           ["manage.py"],          0.95, 0.90, 0.60),
-    ("framework", "Express",        ["express"],                     None,           None,                   0.90, 0.00, 0.0),
-    ("framework", "Next.js",        ["next"],                        None,           None,                   0.90, 0.00, 0.0),
-    ("framework", "Nuxt.js",        ["nuxt"],                        None,           None,                   0.90, 0.00, 0.0),
-    ("framework", "Spring Boot",    ["spring-boot"],                 None,           None,                   0.90, 0.00, 0.0),
-    ("framework", "Gin",            ["gin-gonic/gin"],               None,           None,                   0.90, 0.00, 0.0),
-    ("framework", "Echo",           ["labstack/echo"],               None,           None,                   0.90, 0.00, 0.0),
-    ("framework", "Rocket",         ["rocket"],                      None,           None,                   0.85, 0.00, 0.0),
-    ("framework", "Actix",          ["actix-web"],                   None,           None,                   0.85, 0.00, 0.0),
-    ("framework", "Tokio",          ["tokio"],                       None,           None,                   0.85, 0.00, 0.0),
-    ("framework", "NestJS",         ["@nestjs/core"],                None,           None,                   0.90, 0.00, 0.0),
-    ("framework", "Strapi",         ["@strapi/strapi"],              None,           ["favicon.png"],        0.90, 0.00, 0.60),
-
+    ("framework", "FastAPI", ["fastapi", "uvicorn"], None, None, 0.95, 0.90, 0.0),
+    ("framework", "Flask", ["flask"], ["flask"], None, 0.95, 0.90, 0.0),
+    ("framework", "Django", ["django"], None, ["manage.py"], 0.95, 0.90, 0.60),
+    ("framework", "Express", ["express"], None, None, 0.90, 0.00, 0.0),
+    ("framework", "Next.js", ["next"], None, None, 0.90, 0.00, 0.0),
+    ("framework", "Nuxt.js", ["nuxt"], None, None, 0.90, 0.00, 0.0),
+    ("framework", "Spring Boot", ["spring-boot"], None, None, 0.90, 0.00, 0.0),
+    ("framework", "Gin", ["gin-gonic/gin"], None, None, 0.90, 0.00, 0.0),
+    ("framework", "Echo", ["labstack/echo"], None, None, 0.90, 0.00, 0.0),
+    ("framework", "Rocket", ["rocket"], None, None, 0.85, 0.00, 0.0),
+    ("framework", "Actix", ["actix-web"], None, None, 0.85, 0.00, 0.0),
+    ("framework", "Tokio", ["tokio"], None, None, 0.85, 0.00, 0.0),
+    ("framework", "NestJS", ["@nestjs/core"], None, None, 0.90, 0.00, 0.0),
+    ("framework", "Strapi", ["@strapi/strapi"], None, ["favicon.png"], 0.90, 0.00, 0.60),
     # --- Databases ---
-    ("database", "PostgreSQL",      ["psycopg2", "psycopg", "asyncpg", "pg", "libpq", "pq"], None,       None, 0.85, 0.00, 0.0),
-    ("database", "MySQL",           ["mysqlclient", "mysql-connector", "pymysql", "mysql2", "mariadb"], None, None, 0.85, 0.00, 0.0),
-    ("database", "SQLite",          ["sqlite3", "sqlite", "better-sqlite3"],                None,       None, 0.80, 0.00, 0.0),
-    ("database", "MongoDB",         ["pymongo", "mongodb", "mongoose", "mongo"],             None,       None, 0.85, 0.00, 0.0),
+    ("database", "PostgreSQL", ["psycopg2", "psycopg", "asyncpg", "pg", "libpq", "pq"], None, None, 0.85, 0.00, 0.0),
+    (
+        "database",
+        "MySQL",
+        ["mysqlclient", "mysql-connector", "pymysql", "mysql2", "mariadb"],
+        None,
+        None,
+        0.85,
+        0.00,
+        0.0,
+    ),
+    ("database", "SQLite", ["sqlite3", "sqlite", "better-sqlite3"], None, None, 0.80, 0.00, 0.0),
+    ("database", "MongoDB", ["pymongo", "mongodb", "mongoose", "mongo"], None, None, 0.85, 0.00, 0.0),
     # --- ORMs ---
-    ("orm", "SQLAlchemy",           ["sqlalchemy"],                  None,                   None,       0.90, 0.85, 0.0),
-    ("orm", "Prisma",               ["@prisma/client", "prisma"],    None,                   None,       0.90, 0.00, 0.0),
-    ("orm", "Sequelize",            ["sequelize"],                   None,                   None,       0.85, 0.00, 0.0),
-    ("orm", "Mongoose",             ["mongoose"],                    None,                   None,       0.85, 0.00, 0.0),
-    ("orm", "TypeORM",              ["typeorm"],                     None,                   None,       0.85, 0.00, 0.0),
-    ("orm", "GORM",                 ["gorm.io/gorm"],                None,                   None,       0.85, 0.00, 0.0),
-    ("orm", "Diesel",               ["diesel"],                      None,                   None,       0.85, 0.00, 0.0),
-    ("orm", "ActiveRecord",         ["activerecord"],                None,                   None,       0.85, 0.00, 0.0),
-
+    ("orm", "SQLAlchemy", ["sqlalchemy"], None, None, 0.90, 0.85, 0.0),
+    ("orm", "Prisma", ["@prisma/client", "prisma"], None, None, 0.90, 0.00, 0.0),
+    ("orm", "Sequelize", ["sequelize"], None, None, 0.85, 0.00, 0.0),
+    ("orm", "Mongoose", ["mongoose"], None, None, 0.85, 0.00, 0.0),
+    ("orm", "TypeORM", ["typeorm"], None, None, 0.85, 0.00, 0.0),
+    ("orm", "GORM", ["gorm.io/gorm"], None, None, 0.85, 0.00, 0.0),
+    ("orm", "Diesel", ["diesel"], None, None, 0.85, 0.00, 0.0),
+    ("orm", "ActiveRecord", ["activerecord"], None, None, 0.85, 0.00, 0.0),
     # --- Caches ---
-    ("cache", "Redis",              ["redis", "ioredis", "django-redis"],                  None,       None, 0.85, 0.80, 0.0),
-    ("cache", "Memcached",          ["pymemcache", "memcached", "django-pymemcache"],      None,       None, 0.80, 0.00, 0.0),
-
+    ("cache", "Redis", ["redis", "ioredis", "django-redis"], None, None, 0.85, 0.80, 0.0),
+    ("cache", "Memcached", ["pymemcache", "memcached", "django-pymemcache"], None, None, 0.80, 0.00, 0.0),
     # --- Message Queues ---
-    ("queue", "Celery",             ["celery"],                      None,                   ["celery.py"], 0.90, 0.85, 0.85),
-    ("queue", "RQ",                 ["rq", "redis-queue"],           None,                   None,       0.80, 0.00, 0.0),
-    ("queue", "Sidekiq",            ["sidekiq"],                     None,                   None,       0.85, 0.00, 0.0),
-    ("queue", "Bull",               ["bull", "bullmq"],              None,                   None,       0.80, 0.00, 0.0),
-    ("queue", "RabbitMQ",           ["pika", "amqp", "rabbitmq", "bunny", "amqp-client"],  None,       None, 0.80, 0.00, 0.0),
-    ("queue", "Kafka",              ["kafka-python", "confluent-kafka", "kafka-node", "kafka"], None,   None, 0.80, 0.00, 0.0),
-
+    ("queue", "Celery", ["celery"], None, ["celery.py"], 0.90, 0.85, 0.85),
+    ("queue", "RQ", ["rq", "redis-queue"], None, None, 0.80, 0.00, 0.0),
+    ("queue", "Sidekiq", ["sidekiq"], None, None, 0.85, 0.00, 0.0),
+    ("queue", "Bull", ["bull", "bullmq"], None, None, 0.80, 0.00, 0.0),
+    ("queue", "RabbitMQ", ["pika", "amqp", "rabbitmq", "bunny", "amqp-client"], None, None, 0.80, 0.00, 0.0),
+    ("queue", "Kafka", ["kafka-python", "confluent-kafka", "kafka-node", "kafka"], None, None, 0.80, 0.00, 0.0),
     # --- Languages ---
-    ("language", "Go",              ["go", "golang"],                   None,           ["go.mod"],             0.60, 0.00, 0.95),
-    ("language", "Python",          ["python"],                         None,           ["requirements.txt", "pyproject.toml", "setup.py", "Pipfile"], 0.60, 0.00, 0.90),
-    ("language", "Rust",            ["rust"],                           None,           ["Cargo.toml"],         0.60, 0.00, 0.95),
-    ("language", "JavaScript",       None,                              None,           ["package.json"],       0.00, 0.00, 0.90),
-
+    ("language", "Go", ["go", "golang"], None, ["go.mod"], 0.60, 0.00, 0.95),
+    (
+        "language",
+        "Python",
+        ["python"],
+        None,
+        ["requirements.txt", "pyproject.toml", "setup.py", "Pipfile"],
+        0.60,
+        0.00,
+        0.90,
+    ),
+    ("language", "Rust", ["rust"], None, ["Cargo.toml"], 0.60, 0.00, 0.95),
+    ("language", "JavaScript", None, None, ["package.json"], 0.00, 0.00, 0.90),
     # --- ML ---
-    ("framework", "PyTorch",        ["torch", "pytorch"],               None,           None,                   0.90, 0.00, 0.0),
-
+    ("framework", "PyTorch", ["torch", "pytorch"], None, None, 0.90, 0.00, 0.0),
     # --- DevOps ---
-    ("framework", "Argo CD",        ["github.com/argoproj/argo-cd"],    None,           None,                   0.90, 0.00, 0.0),
-
+    ("framework", "Argo CD", ["github.com/argoproj/argo-cd"], None, None, 0.90, 0.00, 0.0),
     # --- Authentication ---
-    ("auth", "JWT",                 ["pyjwt", "jwt", "jsonwebtoken", "golang-jwt", "jjwt"], None,      None, 0.80, 0.75, 0.0),
-    ("auth", "OAuth",               ["authlib", "oauthlib", "passport", "oauth2"],           None,       None, 0.70, 0.00, 0.0),
-    ("auth", "Devise",              ["devise"],                      None,                   None,       0.85, 0.00, 0.0),
-    ("auth", "Passport",            ["passport"],                    None,                   None,       0.85, 0.00, 0.0),
-
+    ("auth", "JWT", ["pyjwt", "jwt", "jsonwebtoken", "golang-jwt", "jjwt"], None, None, 0.80, 0.75, 0.0),
+    ("auth", "OAuth", ["authlib", "oauthlib", "passport", "oauth2"], None, None, 0.70, 0.00, 0.0),
+    ("auth", "Devise", ["devise"], None, None, 0.85, 0.00, 0.0),
+    ("auth", "Passport", ["passport"], None, None, 0.85, 0.00, 0.0),
     # --- Frontend ---
-    ("frontend", "React",           ["react", "react-dom"],          None,                   None,       0.90, 0.00, 0.0),
-    ("frontend", "Vue",             ["vue"],                         None,                   None,       0.90, 0.00, 0.0),
-    ("frontend", "Svelte",          ["svelte"],                      None,                   None,       0.90, 0.00, 0.0),
-    ("frontend", "Angular",         ["@angular/core"],               None,                   None,       0.90, 0.00, 0.0),
-
+    ("frontend", "React", ["react", "react-dom"], None, None, 0.90, 0.00, 0.0),
+    ("frontend", "Vue", ["vue"], None, None, 0.90, 0.00, 0.0),
+    ("frontend", "Svelte", ["svelte"], None, None, 0.90, 0.00, 0.0),
+    ("frontend", "Angular", ["@angular/core"], None, None, 0.90, 0.00, 0.0),
     # --- CSS Frameworks ---
-    ("css", "Tailwind CSS",         ["tailwindcss"],                 None,                   None,       0.85, 0.00, 0.0),
-    ("css", "Bootstrap",            ["bootstrap"],                   None,                   None,       0.80, 0.00, 0.0),
-
+    ("css", "Tailwind CSS", ["tailwindcss"], None, None, 0.85, 0.00, 0.0),
+    ("css", "Bootstrap", ["bootstrap"], None, None, 0.80, 0.00, 0.0),
     # --- Testing ---
-    ("testing", "pytest",           ["pytest"],                      None,                   None,       0.85, 0.00, 0.0),
-    ("testing", "Jest",             ["jest"],                        None,                   None,       0.85, 0.00, 0.0),
-    ("testing", "RSpec",            ["rspec", "rspec-rails"],        None,                   None,       0.85, 0.00, 0.0),
-    ("testing", "Mocha",            ["mocha"],                       None,                   None,       0.80, 0.00, 0.0),
-    ("testing", "JUnit",            ["junit"],                       None,                   None,       0.80, 0.00, 0.0),
-
+    ("testing", "pytest", ["pytest"], None, None, 0.85, 0.00, 0.0),
+    ("testing", "Jest", ["jest"], None, None, 0.85, 0.00, 0.0),
+    ("testing", "RSpec", ["rspec", "rspec-rails"], None, None, 0.85, 0.00, 0.0),
+    ("testing", "Mocha", ["mocha"], None, None, 0.80, 0.00, 0.0),
+    ("testing", "JUnit", ["junit"], None, None, 0.80, 0.00, 0.0),
     # --- Container / Infrastructure ---
-    ("container", "Docker",         None,                            None,                   ["Dockerfile", "docker-compose.yml", "docker-compose.yaml"], 0.0, 0.0, 0.95),
-    ("container", "Kubernetes",     None,                            None,                   [".kube", "k8s"],                                    0.0, 0.0, 0.85),
-
+    ("container", "Docker", None, None, ["Dockerfile", "docker-compose.yml", "docker-compose.yaml"], 0.0, 0.0, 0.95),
+    ("container", "Kubernetes", None, None, [".kube", "k8s"], 0.0, 0.0, 0.85),
     # --- CI ---
-    ("ci", "GitHub Actions",        None,                            None,                   [".github/workflows"],                               0.0, 0.0, 0.90),
-    ("ci", "GitLab CI",             None,                            None,                   [".gitlab-ci.yml"],                                  0.0, 0.0, 0.90),
-
+    ("ci", "GitHub Actions", None, None, [".github/workflows"], 0.0, 0.0, 0.90),
+    ("ci", "GitLab CI", None, None, [".gitlab-ci.yml"], 0.0, 0.0, 0.90),
     # --- Migrations ---
-    ("migration", "Alembic",        ["alembic"],                     None,                   ["alembic.ini", "migrations"],                       0.90, 0.0, 0.85),
-
+    ("migration", "Alembic", ["alembic"], None, ["alembic.ini", "migrations"], 0.90, 0.0, 0.85),
     # --- Monitoring ---
-    ("monitoring", "Prometheus",    ["prometheus-client"],           None,                   None,       0.80, 0.00, 0.0),
-    ("monitoring", "Sentry",        ["sentry-sdk"],                  None,                   None,       0.80, 0.00, 0.0),
+    ("monitoring", "Prometheus", ["prometheus-client"], None, None, 0.80, 0.00, 0.0),
+    ("monitoring", "Sentry", ["sentry-sdk"], None, None, 0.80, 0.00, 0.0),
 ]
 
 
 def _match_dep(dl: str, dn: str) -> bool:
     """Match a dependency string against a detector name.
-    
+
     Supports:
       - Exact match: 'flask' == 'flask'
       - Submodule: 'sqlalchemy.orm' starts with 'sqlalchemy.'
@@ -177,12 +182,14 @@ def detect_technologies(ctx: DetectionContext) -> list[DetectedTechnology]:
 
         if evidence and name not in seen:
             seen.add(name)
-            findings.append(DetectedTechnology(
-                category=cat,
-                name=name,
-                confidence=best_conf,
-                evidence=evidence,
-            ))
+            findings.append(
+                DetectedTechnology(
+                    category=cat,
+                    name=name,
+                    confidence=best_conf,
+                    evidence=evidence,
+                )
+            )
 
     findings.sort(key=lambda f: f.confidence, reverse=True)
     return findings
@@ -213,12 +220,26 @@ def collect_deps(repo_path: Path) -> list[str]:
     return deps
 
 
-_EXCLUDE_DIRS = frozenset({
-    ".git", "__pycache__", "node_modules", "venv", ".venv",
-    ".tox", ".nox", "dist", "build", ".eggs",
-    ".mypy_cache", ".pytest_cache", ".ruff_cache",
-    ".gradle", ".idea", ".vscode",
-})
+_EXCLUDE_DIRS = frozenset(
+    {
+        ".git",
+        "__pycache__",
+        "node_modules",
+        "venv",
+        ".venv",
+        ".tox",
+        ".nox",
+        "dist",
+        "build",
+        ".eggs",
+        ".mypy_cache",
+        ".pytest_cache",
+        ".ruff_cache",
+        ".gradle",
+        ".idea",
+        ".vscode",
+    }
+)
 
 
 def _find_files(repo: Path, filename: str) -> list[Path]:
@@ -237,6 +258,7 @@ def _find_files(repo: Path, filename: str) -> list[Path]:
 
 def _scan_requirements_txt(repo: Path) -> list[str]:
     import re
+
     pkgs: list[str] = []
     for path in _find_files(repo, "requirements.txt"):
         try:
@@ -254,10 +276,12 @@ def _scan_requirements_txt(repo: Path) -> list[str]:
 
 def _scan_pyproject_toml_deps(repo: Path) -> list[str]:
     import re
+
     pkgs: list[str] = []
     for path in _find_files(repo, "pyproject.toml"):
         try:
             import tomllib
+
             data = tomllib.loads(path.read_text(encoding="utf-8", errors="replace"))
         except (ImportError, OSError, ValueError):
             continue
@@ -290,6 +314,7 @@ def _scan_package_json_deps(repo: Path) -> list[str]:
     for path in _find_files(repo, "package.json"):
         try:
             import json
+
             data = json.loads(path.read_text(encoding="utf-8", errors="replace"))
         except (OSError, ValueError):
             continue
@@ -301,17 +326,18 @@ def _scan_package_json_deps(repo: Path) -> list[str]:
 
 def _scan_go_mod_deps(repo: Path) -> list[str]:
     import re
+
     pkgs: list[str] = []
     for path in _find_files(repo, "go.mod"):
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
             # Extract module name (the repo's own Go module)
-            mm = re.match(r'module\s+(\S+)', text)
+            mm = re.match(r"module\s+(\S+)", text)
             if mm:
                 pkgs.append(mm.group(1))
             # Extract dependency paths
             for line in text.splitlines():
-                m = re.match(r'\t([^\s]+)\s+v', line)
+                m = re.match(r"\t([^\s]+)\s+v", line)
                 if m:
                     pkgs.append(m.group(1))
         except OSError:
@@ -324,6 +350,7 @@ def _scan_cargo_toml_deps(repo: Path) -> list[str]:
     for path in _find_files(repo, "Cargo.toml"):
         try:
             import tomllib
+
             data = tomllib.loads(path.read_text(encoding="utf-8", errors="replace"))
         except (ImportError, OSError, ValueError):
             continue
@@ -340,6 +367,7 @@ def _scan_cargo_toml_deps(repo: Path) -> list[str]:
 def _scan_pom_xml(repo: Path) -> list[str]:
     """Parse Maven POM files for artifact IDs (spring-boot, mysql-connector, etc.)"""
     import re
+
     pkgs: list[str] = []
     for path in _find_files(repo, "pom.xml"):
         try:
@@ -354,6 +382,7 @@ def _scan_pom_xml(repo: Path) -> list[str]:
 def _scan_build_gradle(repo: Path) -> list[str]:
     """Parse Gradle build files for dependency declarations."""
     import re
+
     pkgs: list[str] = []
     for path in _find_files(repo, "build.gradle") + _find_files(repo, "build.gradle.kts"):
         try:
@@ -372,6 +401,7 @@ def _scan_build_gradle(repo: Path) -> list[str]:
 def _scan_tox_ini(repo: Path) -> list[str]:
     """Parse tox.ini for test dependency extras (pytest, etc.)"""
     import re
+
     pkgs: list[str] = []
     for path in _find_files(repo, "tox.ini"):
         try:
@@ -398,6 +428,7 @@ def _scan_tox_ini(repo: Path) -> list[str]:
 def _scan_noxfile(repo: Path) -> list[str]:
     """Parse noxfile.py for installed packages (pytest, etc.)."""
     import re
+
     pkgs: list[str] = []
     for path in _find_files(repo, "noxfile.py") + _find_files(repo, "noxfile"):
         try:
@@ -412,6 +443,7 @@ def _scan_noxfile(repo: Path) -> list[str]:
 def _scan_setup_py(repo: Path) -> list[str]:
     """Parse setup.py for install_requires and extras_require."""
     import re
+
     pkgs: list[str] = []
     for path in _find_files(repo, "setup.py"):
         try:

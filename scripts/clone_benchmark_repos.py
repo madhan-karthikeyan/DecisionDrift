@@ -14,7 +14,7 @@ from pathlib import Path
 
 import yaml
 
-BENCHMARK_SPEC = Path(__file__).parent.parent / "bootstrap-benchmark.yaml"
+BENCHMARK_SPEC = Path(__file__).parent.parent / "benchmarks" / "bootstrap.yaml"
 
 
 def clone_repo(url: str, dest: Path, shallow: bool = True) -> bool:
@@ -36,7 +36,7 @@ def clone_repo(url: str, dest: Path, shallow: bool = True) -> bool:
         print(f"  ✗ Failed: {result.stderr.strip()[:200]}", file=sys.stderr)
         return False
     except subprocess.TimeoutExpired:
-        print(f"  ✗ Timed out after 120s", file=sys.stderr)
+        print("  ✗ Timed out after 120s", file=sys.stderr)
         return False
     except Exception as e:
         print(f"  ✗ Error: {e}", file=sys.stderr)
@@ -67,17 +67,16 @@ def main():
     failed = 0
 
     for i, repo in enumerate(repos, 1):
-        name = repo["name"]
-        url = repo.get("url", f"https://github.com/{name}.git")
+        name = repo if isinstance(repo, str) else repo["name"]
+        url = repo["url"] if isinstance(repo, dict) and "url" in repo else f"https://github.com/{name}.git"
         dest = out_dir / name
-        tier = repo.get("tier", "?")
 
         if args.resume and dest.exists():
             print(f"[{i}/{len(repos)}] ✓ {name} (cached)")
             success += 1
             continue
 
-        print(f"[{i}/{len(repos)}] Cloning {name} (Tier {tier})...", end=" ", flush=True)
+        print(f"[{i}/{len(repos)}] Cloning {name}...", end=" ", flush=True)
         ok = clone_repo(url, dest, shallow=args.shallow)
         if ok:
             success += 1

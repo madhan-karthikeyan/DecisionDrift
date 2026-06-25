@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -30,7 +31,7 @@ def adr_list(status: str | None, source: str | None, adr_dir: str):
     records = list_adrs(adr_dir, status=status, source=source)
     if not records:
         click.echo("No ADRs found.")
-        return
+        sys.exit(1)
     _print_adr_table(records)
 
 
@@ -56,23 +57,30 @@ def adr_reject(adr_id: str, reason: str | None, adr_dir: str):
 @click.option("--adr-dir", default="docs/adr", show_default=True, help="Path to ADR directory")
 @click.option("--dry-run", is_flag=True, default=True, help="Show candidates without writing (default)")
 @click.option("--apply", is_flag=True, help="Write candidates to ADR directory")
-@click.option("--min-confidence", default="low", show_default=True,
-              type=click.Choice(["low", "medium", "high"]), help="Minimum confidence level")
-@click.option("--llm", is_flag=True, help="Use LLM for ADR synthesis (requires DECISIONDRIFT_LLM_API_KEY)")
+@click.option(
+    "--min-confidence",
+    default="low",
+    show_default=True,
+    type=click.Choice(["low", "medium", "high"]),
+    help="Minimum confidence level",
+)
+@click.option("--llm", is_flag=True, help="Deprecated; Bootstrap V3 always uses deterministic inference")
 def bootstrap(path: str, adr_dir: str, dry_run: bool, apply: bool, min_confidence: str, llm: bool):
     """Generate candidate ADRs from repository structure.
 
-    Default: deterministic detection + template-based ADR generation.
-
-    With --llm: deterministic detection + LLM-based ADR synthesis.
-    LLM requires DECISIONDRIFT_LLM_API_KEY or a decisiondrift.yml config.
+    Bootstrap V3 uses deterministic evidence collection, repository modeling,
+    governance candidate discovery, and enforceability analysis.
     """
     from decisiondrift.bootstrap.bootstrapper import bootstrap as run_bootstrap
 
     if apply:
         dry_run = False
 
-    run_bootstrap(path, adr_dir=adr_dir, dry_run=dry_run, min_confidence=min_confidence, use_llm=llm)
+    try:
+        run_bootstrap(path, adr_dir=adr_dir, dry_run=dry_run, min_confidence=min_confidence, use_llm=llm)
+    except Exception as e:
+        click.echo(f"Error during bootstrap: {e}", err=True)
+        sys.exit(1)
 
 
 @cli.command()
@@ -80,7 +88,9 @@ def bootstrap(path: str, adr_dir: str, dry_run: bool, apply: bool, min_confidenc
 @click.option("--adr-dir", default="docs/adr", show_default=True, help="Path to ADR directory")
 def ingest(file: str, adr_dir: str):
     """Generate candidate ADRs from free-text notes."""
-    click.echo("Ingest: not yet implemented.")
+    from decisiondrift.ingest.service import run_ingest
+
+    run_ingest(file, adr_dir)
 
 
 def _read_diff(diff_file: str | None, repo: str, from_git: bool) -> str | None:
@@ -88,7 +98,8 @@ def _read_diff(diff_file: str | None, repo: str, from_git: bool) -> str | None:
         try:
             result = subprocess.run(
                 ["git", "diff"],
-                capture_output=True, text=True,
+                capture_output=True,
+                text=True,
                 cwd=repo,
                 timeout=30,
             )
@@ -153,10 +164,13 @@ def review(diff_file: str | None, repo: str, adr_dir: str | None, from_git: bool
     try:
         result = run_review(diff_text, repo_path=repo, adr_dir=str(resolved_adr_dir), config=cfg)
         click.echo(compile_text(result))
+        if result.llm_available and result.findings:
+            violations = [f for f in result.findings if f.classification in ("violates", "likely_violates")]
+            if violations:
+                sys.exit(1)
     except Exception as e:
         click.echo(f"Error during review: {e}", err=True)
-        import traceback
-        traceback.print_exc()
+        sys.exit(1)
 
 
 @cli.command()
@@ -180,6 +194,7 @@ def impact(diff_file: str | None, repo: str, from_git: bool):
     except Exception as e:
         click.echo(f"Error during impact analysis: {e}", err=True)
         import traceback
+
         traceback.print_exc()
 
 
@@ -188,9 +203,13 @@ def impact(diff_file: str | None, repo: str, from_git: bool):
 @click.option("--repo", default=".", show_default=True, help="Path to repository root")
 @click.option("--adr-dir", default=None, help="Path to ADR directory (default: <repo>/docs/adr)")
 @click.option("--from-git", is_flag=True, help="Get diff from `git diff` in the repo")
-@click.option("--fail-on", default="block", show_default=True,
-              type=click.Choice(["block", "require_approval", "warn", "info"]),
-              help="Minimum action level that causes non-zero exit")
+@click.option(
+    "--fail-on",
+    default="block",
+    show_default=True,
+    type=click.Choice(["block", "require_approval", "warn", "info"]),
+    help="Minimum action level that causes non-zero exit",
+)
 def enforce(diff_file: str | None, repo: str, adr_dir: str | None, from_git: bool, fail_on: str):
     """Enforce ADR rules against a diff or full repo.
 
@@ -199,7 +218,6 @@ def enforce(diff_file: str | None, repo: str, adr_dir: str | None, from_git: boo
     """
     from decisiondrift.adr.loader import load_adrs
     from decisiondrift.adr.supersession import resolve_active
-    from decisiondrift.rules.engine import enforce as run_enforce
     from decisiondrift.rules.engine import enforce_from_adrs
 
     resolved_adr_dir = Path(adr_dir) if adr_dir else Path(repo) / "docs" / "adr"
@@ -239,15 +257,18 @@ def enforce(diff_file: str | None, repo: str, adr_dir: str | None, from_git: boo
             if action_level <= fail_level:
                 exit_code = 1
 
-        click.echo(f"---")
-        click.echo(f"{len(result.findings)} finding(s), "
-                   f"{result.rules_evaluated} rule(s) evaluated, "
-                   f"{result.files_scanned} file(s) scanned.")
+        click.echo("---")
+        click.echo(
+            f"{len(result.findings)} finding(s), "
+            f"{result.rules_evaluated} rule(s) evaluated, "
+            f"{result.files_scanned} file(s) scanned."
+        )
         sys.exit(exit_code)
 
     except Exception as e:
         click.echo(f"Error during enforcement: {e}", err=True)
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 
@@ -268,7 +289,7 @@ def audit(repo: str, adr_dir: str | None):
 
     resolved_adr_dir = Path(adr_dir) if adr_dir else Path(repo) / "docs" / "adr"
     if not _check_adr_dir(str(resolved_adr_dir)):
-        return
+        sys.exit(1)
 
     all_records = load_adrs(str(resolved_adr_dir))
     accepted = [r for r in all_records if r.status == "accepted"]
@@ -276,15 +297,16 @@ def audit(repo: str, adr_dir: str | None):
     active = resolve_active(accepted)
 
     today = date.today()
+    exit_code = 0
 
     click.echo(f"\nADR Audit — {today}")
     click.echo(f"{'─' * 50}")
-    click.echo(f"")
+    click.echo("")
     click.echo(f"  Total ADRs:     {len(all_records)}")
     click.echo(f"  Accepted:       {len(accepted)}")
     click.echo(f"  Proposed:       {len(proposed)}")
     click.echo(f"  Rejected:       {len([r for r in all_records if r.status == 'rejected'])}")
-    click.echo(f"")
+    click.echo("")
 
     # Expired ADRs
     expired = [r for r in active if r.expires_after and r.expires_after < today.isoformat()]
@@ -293,6 +315,7 @@ def audit(repo: str, adr_dir: str | None):
         for r in expired:
             click.echo(f"    {r.id}: {r.title} (expired {r.expires_after})")
         click.echo("")
+        exit_code = 1
 
     # Stale ADRs (past review_after)
     stale = [r for r in active if r.review_after and r.review_after < today.isoformat()]
@@ -301,6 +324,7 @@ def audit(repo: str, adr_dir: str | None):
         for r in stale:
             click.echo(f"    {r.id}: {r.title} (review by {r.review_after})")
         click.echo("")
+        exit_code = 1
 
     # Unreviewed ADRs
     if proposed:
@@ -308,60 +332,69 @@ def audit(repo: str, adr_dir: str | None):
         for r in proposed:
             click.echo(f"    {r.id}: {r.title}")
         click.echo("")
+        exit_code = 1
 
     # Drift detection (reuses rule engine)
     if active:
-        click.echo(f"  Checking ADR drift...")
+        click.echo("  Checking ADR drift...")
         drift_result = enforce_from_adrs(active, repo_path=repo)
         if drift_result.findings:
             click.echo(f"  ⚠ ADR Drift: {len(drift_result.findings)}")
             for f in drift_result.findings:
                 click.echo(f"    {f.adr_id}: {f.match_value} found in repo ({f.rule_type.value})")
+            exit_code = 1
         else:
-            click.echo(f"  ✓ No ADR drift detected.")
+            click.echo("  ✓ No ADR drift detected.")
         click.echo("")
 
-    # ADR Coverage (via Bootstrap V2 detection)
-    click.echo(f"  Checking ADR coverage...")
+    # ADR Coverage (via Bootstrap V3)
+    click.echo("  Checking ADR coverage...")
     try:
-        from decisiondrift.bootstrap.bootstrapper import _detect_architecture
-        from decisiondrift.bootstrap.architecture import ArchitectureModel
+        from decisiondrift.bootstrap.v3 import build_repository_model
 
-        arch = _detect_architecture(repo)
-        if arch and arch.count() > 0:
-            governed = {r.title.lower() for r in active}
-            governed.update(*(r.keywords for r in active))
-            coverage = arch.coverage(governed)
-            click.echo(f"")
-            click.echo(f"  Architecture Components: {arch.count()}")
-            click.echo(f"  Governed Components:     {int(arch.count() * coverage)}")
-            click.echo(f"  Decision Coverage:       {coverage:.0%}")
-            click.echo(f"")
+        model = build_repository_model(repo)
+        detected_techs = {
+            t.name.lower() for t in model.technologies if t.evidence_level.value in ("moderate", "strong")
+        }
+        governed = {r.title.lower() for r in active}
+        for r in active:
+            if r.keywords:
+                governed.update(k.lower() for k in r.keywords)
+        covered = detected_techs & governed
+        missing_techs = detected_techs - governed
 
-            missing_techs = arch.report_missing(governed)
+        if detected_techs:
+            click.echo("")
+            click.echo(f"  Detected Technologies:   {len(detected_techs)}")
+            click.echo(f"  Governed:                {len(covered)}")
+            click.echo(f"  Coverage:                {len(covered) / len(detected_techs):.0%}")
+            click.echo("")
+
             if missing_techs:
-                click.echo(f"  Missing Governance:")
-                for t in missing_techs:
+                click.echo("  Missing Governance:")
+                for t in sorted(missing_techs):
                     click.echo(f"    ⚠ {t}")
                 click.echo("")
         else:
-            click.echo(f"  No technologies detected.")
+            click.echo("  No technologies detected.")
             click.echo("")
     except Exception as e:
         click.echo(f"  (Coverage analysis skipped: {e})")
         click.echo("")
 
     # Quality scores
-    click.echo(f"  ADR Quality Scores:")
+    click.echo("  ADR Quality Scores:")
     for r in active:
         score, missing, deductions = _adr_quality_score(r)
         click.echo(f"    {r.id}: {score}/100  ({r.title})")
         if missing:
-            click.echo(f"          Missing:")
+            click.echo("          Missing:")
             for field, points in deductions:
                 click.echo(f"            - {field} ({-points})")
         else:
-            click.echo(f"          ✓ All recommended fields present")
+            click.echo("          ✓ All recommended fields present")
+
+    sys.exit(exit_code)
 
 
 def _adr_quality_score(record) -> tuple[int, list[str], list[tuple[str, int]]]:
@@ -399,9 +432,10 @@ def guard(repo: str, adr_dir: str | None, install: bool):
     if install:
         hook_path = Path(repo) / ".git" / "hooks" / "pre-commit"
         hook_path.parent.mkdir(parents=True, exist_ok=True)
-        hook_content = f"""#!/bin/sh
-exec decisiondrift enforce --from-git --repo "{repo}" {"--adr-dir " + adr_dir if adr_dir else ""}
-"""
+        args = [shlex.quote(repo)]
+        if adr_dir:
+            args.extend(["--adr-dir", shlex.quote(adr_dir)])
+        hook_content = "#!/bin/sh\nexec decisiondrift enforce --from-git --repo " + " ".join(args)
         hook_path.write_text(hook_content.strip())
         hook_path.chmod(0o755)
         click.echo(f"Pre-commit hook installed at {hook_path}")
@@ -409,6 +443,7 @@ exec decisiondrift enforce --from-git --repo "{repo}" {"--adr-dir " + adr_dir if
 
     click.echo("Running guard (pre-commit enforcement)...")
     from click.testing import CliRunner
+
     runner = CliRunner()
     args = ["enforce", "--from-git", "--repo", repo]
     if adr_dir:

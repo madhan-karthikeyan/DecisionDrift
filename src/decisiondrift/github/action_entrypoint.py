@@ -80,7 +80,7 @@ def main() -> int:
     # Step 2: LLM classification (semantic reasoning, only for remaining analysis)
     lm_result = None
     if config["llm"]["api_key"]:
-        print(f"Running LLM classification...")
+        print("Running LLM classification...")
         try:
             lm_result = run_review(
                 diff_text,

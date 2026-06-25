@@ -11,15 +11,19 @@ from decisiondrift.rules.models import (
     EnforcementFinding,
     EnforcementResult,
     Rule,
-    RuleMatch,
     RuleSet,
     RuleType,
 )
 from decisiondrift.rules.scanner import (
     match_dependency_rules,
     match_import_rules,
-    scan_dependencies,
-    scan_imports,
+)
+from decisiondrift.utils.dependency_parser import (
+    parse_cargo_toml,
+    parse_go_mod,
+    parse_package_json,
+    parse_pyproject_toml,
+    parse_requirements_txt,
 )
 
 
@@ -147,9 +151,55 @@ def _enforce_repo(
         rules_evaluated += 1
         findings.append(_to_finding(m.rule, m.matched_value, m.file_path))
 
+    # Collect all files in the repo for path, API, and config checks
+    all_files: list[Path] = []
+    for f in repo.rglob("*"):
+        if f.is_file() and not f.is_symlink():
+            all_files.append(f)
+
+    # Path rules: check all file paths
+    for rule in path_rules:
+        rules_evaluated += 1
+        for f in all_files:
+            try:
+                rel = str(f.relative_to(repo))
+            except ValueError:
+                continue
+            if re.search(rule.match, rel):
+                findings.append(_to_finding(rule, rel, rel))
+
+    # API rules: check function calls in all Python files
+    for rule in api_rules:
+        rules_evaluated += 1
+        for f in all_files:
+            if f.suffix.lower() != ".py":
+                continue
+            calls = _scan_api_calls(f)
+            for call in calls:
+                if rule.match in call:
+                    try:
+                        rel = str(f.relative_to(repo))
+                    except ValueError:
+                        rel = f.name
+                    findings.append(_to_finding(rule, call, rel))
+
+    # Config rules: check config files for key-value patterns
+    for rule in config_rules:
+        rules_evaluated += 1
+        for f in all_files:
+            try:
+                rel = str(f.relative_to(repo))
+            except ValueError:
+                continue
+            if not _is_config_file(rel):
+                continue
+            matches = _scan_config_pattern(f, rule.match)
+            for val in matches:
+                findings.append(_to_finding(rule, val, rel))
+
     return EnforcementResult(
         findings=findings,
-        files_scanned=len(list(repo.rglob("*"))),
+        files_scanned=len(all_files),
         dependencies_scanned=len(dep_matches),
         imports_scanned=len(imp_matches),
         rules_evaluated=rules_evaluated,
@@ -157,6 +207,14 @@ def _enforce_repo(
 
 
 def _to_finding(rule: Rule, match_value: str, file_path: str | None = None) -> EnforcementFinding:
+    action = rule.action
+    conf_val = rule.confidence.numeric()
+
+    if conf_val < 0.50:
+        action = Action.INFO
+    elif conf_val < 0.80 and action in (Action.BLOCK, Action.REQUIRE_APPROVAL):
+        action = Action.WARN
+
     severity_map: dict[Action, str] = {
         Action.BLOCK: "critical",
         Action.REQUIRE_APPROVAL: "high",
@@ -168,8 +226,8 @@ def _to_finding(rule: Rule, match_value: str, file_path: str | None = None) -> E
         adr_title="",
         rule_id=rule.id,
         rule_type=rule.type,
-        action=rule.action,
-        severity=severity_map.get(rule.action, "medium"),
+        action=action,
+        severity=severity_map.get(action, "medium"),
         match_value=match_value,
         file_path=file_path,
         description=rule.description,
@@ -178,53 +236,20 @@ def _to_finding(rule: Rule, match_value: str, file_path: str | None = None) -> E
 
 def _extract_deps_from_file(path: Path) -> list[str]:
     """Extract dependency names from a dependency file."""
-    if not path.exists():
-        return []
-    try:
-        text = path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return []
-    deps: list[str] = []
-    if path.name == "requirements.txt":
-        for line in text.splitlines():
-            line = line.strip()
-            if line and not line.startswith("#") and not line.startswith("-"):
-                pkg = re.split(r"[=<>!~]", line)[0].strip()
-                if pkg:
-                    deps.append(pkg)
-    elif path.name == "pyproject.toml":
-        try:
-            import tomllib
-            data = tomllib.loads(text)
-        except (ImportError, ValueError):
-            return deps
-        proj = data.get("project", {})
-        for dep in proj.get("dependencies", []):
-            if isinstance(dep, str):
-                pkg = re.split(r"[=<>!~\[ ]", dep)[0].strip()
-                if pkg:
-                    deps.append(pkg)
-    elif path.name == "package.json":
-        try:
-            import json
-            data = json.loads(text)
-        except (ImportError, ValueError):
-            return deps
-        for key in ("dependencies", "devDependencies"):
-            for pkg in data.get(key, {}):
-                deps.append(pkg)
-    elif path.name == "Cargo.toml":
-        try:
-            import tomllib
-            data = tomllib.loads(text)
-        except (ImportError, ValueError):
-            return deps
-        for pkg in data.get("dependencies", {}):
-            deps.append(pkg)
-    elif path.name == "go.mod":
-        for m in re.finditer(r'^require\s+([^\s]+)\s', text, re.MULTILINE):
-            deps.append(m.group(1))
-    return deps
+    name = path.name
+    if name == "requirements.txt":
+        return parse_requirements_txt(path)
+    if name == "pyproject.toml":
+        return [dep for dep, _role in parse_pyproject_toml(path)]
+    if name == "package.json":
+        return [dep for dep, _role in parse_package_json(path)]
+    if name == "Cargo.toml":
+        _pkg, deps = parse_cargo_toml(path)
+        return [dep for dep, _role in deps]
+    if name == "go.mod":
+        _module, deps = parse_go_mod(path)
+        return deps
+    return []
 
 
 def _scan_imports_in_diff(files, repo: Path) -> list[tuple[str, str]]:

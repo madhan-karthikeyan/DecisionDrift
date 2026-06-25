@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from decisiondrift.adr.id_allocator import allocate_id
 from decisiondrift.adr.loader import load_adrs
 from decisiondrift.adr.parser import parse_adr_file
 from decisiondrift.adr.writer import set_status

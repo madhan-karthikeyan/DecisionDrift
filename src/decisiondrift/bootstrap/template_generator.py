@@ -188,8 +188,10 @@ def generate_suggestions(
 
         prohibitions = [p.strip() for p in prohibitions_str.split(",") if p.strip()]
 
-        conf_level = ConfidenceLevel.HIGH if base_conf >= 0.85 else (
-            ConfidenceLevel.MEDIUM if base_conf >= 0.7 else ConfidenceLevel.LOW
+        conf_level = (
+            ConfidenceLevel.HIGH
+            if base_conf >= 0.85
+            else (ConfidenceLevel.MEDIUM if base_conf >= 0.7 else ConfidenceLevel.LOW)
         )
 
         adr = DecisionRecord(
@@ -200,11 +202,11 @@ def generate_suggestions(
             type=tech.category,
             source="bootstrap",
             rationale=f"## Context\n\nThe repository uses {tech.name} ({tech.category}).\n\n"
-                      f"## Decision (candidate)\n\n{tech.name} is detected with "
-                      f"{tech.confidence:.0%} confidence based on {tech.evidence[0] if tech.evidence else 'structure analysis'}.\n\n"
-                      f"{rationale}\n\n"
-                      f"## Confidence\n\n{tech.confidence:.0%} (structural detection). "
-                      f"This rationale is inferred, not confirmed by the team.",
+            f"## Decision (candidate)\n\n{tech.name} is detected with "
+            f"{tech.confidence:.0%} confidence based on {tech.evidence[0] if tech.evidence else 'structure analysis'}.\n\n"
+            f"{rationale}\n\n"
+            f"## Confidence\n\n{tech.confidence:.0%} (structural detection). "
+            f"This rationale is inferred, not confirmed by the team.",
             prohibitions=prohibitions,
             keywords=[tech.name.lower(), tech.category],
             evidence=tech.evidence,
@@ -231,7 +233,7 @@ def apply_suggestions(
     written = 0
     for s in suggestions:
         path = adr_path / f"{s.adr.id}.md"
-        metadata = s.adr.model_dump(exclude={"embedding", "rationale"})
+        metadata = s.adr.model_dump(exclude={"embedding", "rationale"}, exclude_none=True)
         for k, v in metadata.items():
             if isinstance(v, Enum):
                 metadata[k] = v.value

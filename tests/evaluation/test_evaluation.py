@@ -35,13 +35,16 @@ def config():
 class TestRetrievalEvaluation:
     """Tests that the correct ADRs are retrieved for each patch."""
 
-    @pytest.mark.parametrize("patch_name", [
-        "sqlalchemy_violation",
-        "jwt_violation",
-        "celery_violation",
-        "rbac_violation",
-        "clean_change",
-    ])
+    @pytest.mark.parametrize(
+        "patch_name",
+        [
+            "sqlalchemy_violation",
+            "jwt_violation",
+            "celery_violation",
+            "rbac_violation",
+            "clean_change",
+        ],
+    )
     def test_expected_adrs_in_top_retrieval(self, patch_name, expectations, config):
         spec = expectations[patch_name]
         patch_text = (PATCHES_DIR / spec["file"]).read_text()
@@ -52,17 +55,18 @@ class TestRetrievalEvaluation:
         expected = set(spec["expected_adrs"])
 
         missing = expected - retrieved_adrs
-        assert not missing, (
-            f"{patch_name}: expected ADRs {missing} not in retrieved set {retrieved_adrs}"
-        )
+        assert not missing, f"{patch_name}: expected ADRs {missing} not in retrieved set {retrieved_adrs}"
 
-    @pytest.mark.parametrize("patch_name", [
-        "sqlalchemy_violation",
-        "jwt_violation",
-        "celery_violation",
-        "rbac_violation",
-        "clean_change",
-    ])
+    @pytest.mark.parametrize(
+        "patch_name",
+        [
+            "sqlalchemy_violation",
+            "jwt_violation",
+            "celery_violation",
+            "rbac_violation",
+            "clean_change",
+        ],
+    )
     def test_retrieval_has_files_and_symbols(self, patch_name, expectations, config):
         spec = expectations[patch_name]
         patch_text = (PATCHES_DIR / spec["file"]).read_text()
@@ -76,17 +80,20 @@ class TestRetrievalEvaluation:
 
 class TestClassificationEvaluation:
     """Tests that the LLM classifies each patch correctly.
-    
+
     Requires DECISIONDRIFT_LLM_API_KEY to be set.
     """
 
     @pytest.mark.skipif(not HAS_API_KEY, reason="DECISIONDRIFT_LLM_API_KEY not set")
-    @pytest.mark.parametrize("patch_name", [
-        "sqlalchemy_violation",
-        "jwt_violation",
-        "celery_violation",
-        "rbac_violation",
-    ])
+    @pytest.mark.parametrize(
+        "patch_name",
+        [
+            "sqlalchemy_violation",
+            "jwt_violation",
+            "celery_violation",
+            "rbac_violation",
+        ],
+    )
     def test_violation_classification(self, patch_name, expectations, config):
         spec = expectations[patch_name]
         patch_text = (PATCHES_DIR / spec["file"]).read_text()
@@ -98,8 +105,7 @@ class TestClassificationEvaluation:
         primary_expected = spec["expected_adrs"][0]
 
         assert primary_expected in violation_adrs, (
-            f"{patch_name}: expected {primary_expected} in violations, "
-            f"got violations for {violation_adrs}"
+            f"{patch_name}: expected {primary_expected} in violations, got violations for {violation_adrs}"
         )
 
     @pytest.mark.skipif(not HAS_API_KEY, reason="DECISIONDRIFT_LLM_API_KEY not set")

@@ -7,8 +7,8 @@ import yaml
 
 from decisiondrift.adr.loader import load_adrs
 from decisiondrift.adr.supersession import resolve_active
-from decisiondrift.impact.reference_scan import generate_search_terms
 from decisiondrift.impact.models import ChangedSymbol
+from decisiondrift.impact.reference_scan import generate_search_terms
 from decisiondrift.retrieval.keyword import KeywordBackend
 
 DATA_DIR = Path(__file__).parent / "data"
@@ -49,7 +49,7 @@ class TestRetrievalAccuracy:
                 if expected not in result_ids:
                     failures.append(f"  {q['symbol_name']} ({q['file_path']}) → expected {expected} not in top-5")
 
-        assert not failures, f"Retrieval failures:\n" + "\n".join(failures)
+        assert not failures, "Retrieval failures:\n" + "\n".join(failures)
 
     def test_top_result_contains_primary_adr(self, decisions, queries):
         backend = KeywordBackend()
@@ -78,4 +78,4 @@ class TestRetrievalAccuracy:
                     f"top result is {top.adr_id} ({top.score}), expected {primary}"
                 )
 
-        assert not failures, f"Top result mismatches:\n" + "\n".join(failures)
+        assert not failures, "Top result mismatches:\n" + "\n".join(failures)

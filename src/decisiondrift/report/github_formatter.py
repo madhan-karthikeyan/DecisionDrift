@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from decisiondrift.models.schema import Finding, ReviewResult
+from decisiondrift.models.schema import ReviewResult
 
 SEVERITY_EMOJI = {
     "critical": "🔴",
@@ -88,17 +88,18 @@ def compile_github_comment(
                     f"**Suggested Action:** {f.suggested_action}" if f.suggested_action else "",
                     f"**Confidence:** {f.confidence:.0%} ({f.evidence_strength})",
                 ]
-                body = "\n\n".join(l for l in body_lines if l)
+                body = "\n\n".join(line for line in body_lines if line)
                 parts.append(f"\n{_collapsible(summary, body)}\n")
         else:
             parts.append("\n### ✅ LLM Classification — No Violations Detected")
 
         if others:
             others_text = "\n".join(
-                f"- `{f.adr_id}` — {f.adr_title} ({f.classification}, {f.evidence_strength})"
-                for f in others
+                f"- `{f.adr_id}` — {f.adr_title} ({f.classification}, {f.evidence_strength})" for f in others
             )
-            parts.append(f"\n<details>\n<summary>📋 {len(others)} Additional LLM Finding(s)</summary>\n\n{others_text}\n</details>\n")
+            parts.append(
+                f"\n<details>\n<summary>📋 {len(others)} Additional LLM Finding(s)</summary>\n\n{others_text}\n</details>\n"
+            )
 
     # Summary line
     total_files = result.files_scanned if has_lm else 0

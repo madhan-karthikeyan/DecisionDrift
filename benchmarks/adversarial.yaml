@@ -1,0 +1,62 @@
+# Bootstrap V3 Adversarial Benchmark — Edge Cases
+#
+# Repos specifically chosen to test Bootstrap V3's ability to distinguish
+# what matters from what merely exists. These are NOT expected to generate
+# ADRs — success is correctly suppressing false positives.
+
+repositories:
+  # Library with FastAPI examples only
+  - name: library-with-fastapi-examples
+    description: "Library repo that contains FastAPI only in examples directory"
+    expected_adrs: 0
+    expected_suppressions:
+      - "FastAPI (example directory only)"
+
+  # Repo with Flask/Django in tests only
+  - name: flask-tests-only
+    description: "Repo with Flask present only in test dependencies"
+    expected_adrs: 0
+    expected_suppressions:
+      - "Flask (test dependencies only)"
+
+  # Repo with Dockerfiles but no deployable service
+  - name: dockerfile-no-service
+    description: "Repo with Dockerfile but no actual service to deploy"
+    expected_adrs: 0
+    expected_suppressions:
+      - "Docker (no deployable service)"
+
+  # Repo with Redis optional dependency only
+  - name: redis-optional-only
+    description: "Repo with Redis as optional dependency only"
+    expected_adrs: 0
+    expected_suppressions:
+      - "Redis (optional dependency only)"
+
+  # Monorepo with unrelated apps
+  - name: monorepo-unrelated-apps
+    description: "Monorepo containing multiple unrelated applications"
+    expected_adrs: 0
+    expected_suppressions:
+      - "Multiple frameworks in unrelated contexts"
+
+  # Framework/product repo with many implementation dependencies
+  - name: framework-impl-deps
+    description: "Framework repo with many implementation dependencies"
+    expected_adrs: 0
+    expected_suppressions:
+      - "Implementation technologies (framework repo)"
+
+  # SDK with optional database integrations
+  - name: sdk-optional-db
+    description: "SDK with optional database integration support"
+    expected_adrs: 0
+    expected_suppressions:
+      - "Database technologies (optional integrations)"
+
+  # Frontend package used only for docs
+  - name: frontend-docs-only
+    description: "Frontend package used only for documentation"
+    expected_adrs: 0
+    expected_suppressions:
+      - "Frontend frameworks (docs only)"

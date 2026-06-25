@@ -13,5 +13,4 @@ class RetrievalBackend(ABC):
         search_terms: list[str],
         decisions: list[DecisionRecord],
         top_k: int = 5,
-    ) -> list[RetrievalResult]:
-        ...
+    ) -> list[RetrievalResult]: ...

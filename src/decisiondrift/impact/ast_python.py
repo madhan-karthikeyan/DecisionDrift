@@ -32,23 +32,27 @@ def extract_symbols(file_path: str, source: str | None = None) -> list[ChangedSy
         if isinstance(node, ast.ClassDef):
             # Only collect top-level classes (parent is module)
             if isinstance(getattr(node, "parent", None), ast.Module) or not hasattr(node, "parent"):
-                symbols.append(ChangedSymbol(
-                    name=node.name,
-                    symbol_type="class",
-                    file_path=file_path,
-                    start_line=node.lineno,
-                    end_line=node.end_lineno or node.lineno,
-                ))
+                symbols.append(
+                    ChangedSymbol(
+                        name=node.name,
+                        symbol_type="class",
+                        file_path=file_path,
+                        start_line=node.lineno,
+                        end_line=node.end_lineno or node.lineno,
+                    )
+                )
             # Collect methods inside this class
             for child in ast.iter_child_nodes(node):
                 if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                    symbols.append(ChangedSymbol(
-                        name=child.name,
-                        symbol_type="method",
-                        file_path=file_path,
-                        start_line=child.lineno,
-                        end_line=child.end_lineno or child.lineno,
-                    ))
+                    symbols.append(
+                        ChangedSymbol(
+                            name=child.name,
+                            symbol_type="method",
+                            file_path=file_path,
+                            start_line=child.lineno,
+                            end_line=child.end_lineno or child.lineno,
+                        )
+                    )
 
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             # Only collect module-level functions
@@ -62,13 +66,15 @@ def extract_symbols(file_path: str, source: str | None = None) -> list[ChangedSy
                     if parent:
                         break
             if isinstance(parent, ast.Module):
-                symbols.append(ChangedSymbol(
-                    name=node.name,
-                    symbol_type="function",
-                    file_path=file_path,
-                    start_line=node.lineno,
-                    end_line=node.end_lineno or node.lineno,
-                ))
+                symbols.append(
+                    ChangedSymbol(
+                        name=node.name,
+                        symbol_type="function",
+                        file_path=file_path,
+                        start_line=node.lineno,
+                        end_line=node.end_lineno or node.lineno,
+                    )
+                )
 
     return symbols
 
