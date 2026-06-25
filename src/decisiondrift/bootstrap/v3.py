@@ -44,7 +44,7 @@ class EvidenceRole(StrEnum):
 
 
 class Evidence(BaseModel):
-    kind: Literal["dependency", "import", "file", "directory", "config", "entrypoint"]
+    kind: Literal["dependency", "import", "file", "directory", "config", "entrypoint", "language"]
     value: str
     source_path: str
     role: EvidenceRole
@@ -185,6 +185,72 @@ SELF_FRAMEWORK_REPOS = {
 
 
 DECISION_TEMPLATES: dict[str, tuple[str, str, list[str], str]] = {
+    "Go": (
+        "Use Go as the primary backend language",
+        "technology_choice",
+        ["python", "rust", "nodejs", "java"],
+        "Runtime evidence indicates Go is the primary language.",
+    ),
+    "Gin": (
+        "Use Gin as the backend framework",
+        "technology_choice",
+        ["echo", "fiber"],
+        "Runtime evidence indicates this repository exposes HTTP APIs through Gin.",
+    ),
+    "Express": (
+        "Use Express as the backend framework",
+        "technology_choice",
+        ["fastify", "koa"],
+        "Runtime evidence indicates Express is used for HTTP services.",
+    ),
+    "Python": (
+        "Use Python as the primary backend language",
+        "technology_choice",
+        ["go", "rust", "nodejs", "java"],
+        "Runtime evidence indicates Python is the primary language.",
+    ),
+    "JavaScript": (
+        "Use JavaScript as the primary language",
+        "technology_choice",
+        ["typescript"],
+        "Runtime evidence indicates JavaScript is the primary language.",
+    ),
+    "TypeScript": (
+        "Use TypeScript as the primary language",
+        "technology_choice",
+        ["javascript"],
+        "Runtime evidence indicates TypeScript is the primary language.",
+    ),
+    "Rust": (
+        "Use Rust as the primary backend language",
+        "technology_choice",
+        ["go", "c++", "python"],
+        "Runtime evidence indicates Rust is the primary language.",
+    ),
+    "Node.js": (
+        "Use Node.js as the runtime environment",
+        "technology_choice",
+        ["deno", "bun"],
+        "Runtime evidence indicates Node.js is the chosen runtime.",
+    ),
+    "Spring Boot": (
+        "Use Spring Boot for Java APIs",
+        "technology_choice",
+        ["quarkus", "micronaut"],
+        "Runtime evidence indicates Spring Boot is used for APIs.",
+    ),
+    "NestJS": (
+        "Use NestJS for Node.js APIs",
+        "technology_choice",
+        ["express", "fastify"],
+        "Runtime evidence indicates NestJS is the primary API framework.",
+    ),
+    "Nuxt.js": (
+        "Use Nuxt.js for Vue SSR",
+        "technology_choice",
+        ["next.js", "sveltekit"],
+        "Runtime evidence indicates Nuxt.js is used for server-side rendering.",
+    ),
     "FastAPI": (
         "Use FastAPI for HTTP APIs",
         "technology_choice",
@@ -224,7 +290,7 @@ DECISION_TEMPLATES: dict[str, tuple[str, str, list[str], str]] = {
     "Redis": (
         "Use Redis for Caching",
         "runtime_policy",
-        [],
+        ["memcached"],
         "Runtime evidence indicates Redis is used for cache or shared in-memory state.",
     ),
     "Celery": (
@@ -745,6 +811,60 @@ def _collect_import_evidence(repo: Path) -> list[Evidence]:
                     scope_path=_scope_path(repo, py_file),
                 )
             )
+
+    import re
+
+    # Simple JS/TS import extraction
+    for js_file in _iter_source_files(repo, "*.[jt]s*"):
+        role = _role_from_path(js_file, repo)
+        if role == EvidenceRole.UNKNOWN:
+            role = EvidenceRole.RUNTIME
+        try:
+            content = js_file.read_text(encoding="utf-8", errors="replace")
+            # match `import ... from 'express'` or `require('express')`
+            imports = set(
+                re.findall(r"from\s+['\"]([^'\"]+)['\"]", content)
+                + re.findall(r"require\s*\(\s*['\"]([^'\"]+)['\"]\s*\)", content)
+            )
+            for imp in imports:
+                level = EvidenceLevel.STRONG if role == EvidenceRole.RUNTIME else EvidenceLevel.MODERATE
+                evidence.append(
+                    Evidence(
+                        kind="import",
+                        value=imp,
+                        source_path=_rel(repo, js_file),
+                        role=role,
+                        level=level,
+                        scope_path=_scope_path(repo, js_file),
+                    )
+                )
+        except OSError:
+            pass
+
+    # Simple Go import extraction
+    for go_file in _iter_source_files(repo, "*.go"):
+        role = _role_from_path(go_file, repo)
+        if role == EvidenceRole.UNKNOWN:
+            role = EvidenceRole.RUNTIME
+        try:
+            content = go_file.read_text(encoding="utf-8", errors="replace")
+            # match `import "github.com/gin-gonic/gin"`
+            imports = set(re.findall(r"import\s+[\(\s]*['\"]([^'\"]+)['\"]", content))
+            for imp in imports:
+                level = EvidenceLevel.STRONG if role == EvidenceRole.RUNTIME else EvidenceLevel.MODERATE
+                evidence.append(
+                    Evidence(
+                        kind="import",
+                        value=imp,
+                        source_path=_rel(repo, go_file),
+                        role=role,
+                        level=level,
+                        scope_path=_scope_path(repo, go_file),
+                    )
+                )
+        except OSError:
+            pass
+
     return evidence
 
 
@@ -852,18 +972,44 @@ def _collect_file_evidence(repo: Path) -> list[Evidence]:
                     notes=["GitHub Actions workflow directory detected."],
                 )
             )
+
+    lang_globs = {
+        "*.go": "Go",
+        "*.js": "JavaScript",
+        "*.ts": "TypeScript",
+        "*.rs": "Rust",
+    }
+    for glob, lang in lang_globs.items():
+        for path in repo.rglob(glob):
+            if path.is_file() and _is_allowed_path(repo, path):
+                evidence.append(
+                    Evidence(
+                        kind="language",
+                        value=lang,
+                        source_path=glob,
+                        role=EvidenceRole.RUNTIME,
+                        level=EvidenceLevel.STRONG,
+                        scope_path=None,
+                        notes=[f"{lang} source files detected."],
+                    )
+                )
+                break
+
     return evidence
 
 
 def _technology_for_evidence(ev: Evidence) -> tuple[str, str] | None:
     value = ev.value.lower()
-    if ev.kind in {"file", "directory"}:
+    if ev.kind in {"file", "directory", "language"}:
         file_map = {
             "Docker": ("Docker", "container"),
             "Django": ("Django", "framework"),
             "Alembic": ("Alembic", "migration"),
             "Python": ("Python", "language"),
             "JavaScript": ("JavaScript", "language"),
+            "TypeScript": ("TypeScript", "language"),
+            "Go": ("Go", "language"),
+            "Rust": ("Rust", "language"),
             "Strapi": ("Strapi", "framework"),
             "migrations": ("Alembic", "migration"),
             "alembic": ("Alembic", "migration"),

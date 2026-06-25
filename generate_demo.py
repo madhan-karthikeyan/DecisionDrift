@@ -42,17 +42,18 @@ class AsciicastGenerator:
         self.wait(0.1)
 
     def save(self):
-        with open(self.filename, 'w') as f:
+        with open(self.filename, "w") as f:
             header = {
                 "version": 2,
                 "width": self.width,
                 "height": self.height,
                 "timestamp": int(time.time()),
-                "env": {"SHELL": "/bin/bash", "TERM": "xterm-256color"}
+                "env": {"SHELL": "/bin/bash", "TERM": "xterm-256color"},
             }
             f.write(json.dumps(header) + "\n")
             for event in self.events:
                 f.write(json.dumps(event) + "\n")
+
 
 # Settings
 PROMPT = "\x1b[1;32muser@host\x1b[0m:\x1b[1;34m~\x1b[0m$ "
@@ -90,7 +91,7 @@ tree_output = """\x1b[1;34msample-fastapi-project\x1b[0m
 ├── requirements.txt
 ├── docker-compose.yml
 └── README.md"""
-for line in tree_output.split('\n'):
+for line in tree_output.split("\n"):
     gen.output_line(line, 0.04)
 gen.wait(2.0)
 gen.output_line("")
@@ -110,7 +111,7 @@ checks = [
     "Redis detected",
     "Celery detected",
     "RBAC detected",
-    "Blueprints / Routers detected"
+    "Blueprints / Routers detected",
 ]
 for check in checks:
     gen.output_line(f"\x1b[1;32m✓\x1b[0m {check}", 0.3)
@@ -132,7 +133,7 @@ adrs = [
     ("[1]", "Use FastAPI as the backend framework", "98%"),
     ("[2]", "Database migrations managed with Alembic", "95%"),
     ("[3]", "JWT authentication for stateless auth", "96%"),
-    ("[4]", "Containerized deployment using Docker", "94%")
+    ("[4]", "Containerized deployment using Docker", "94%"),
 ]
 
 for idx, title, conf in adrs:
@@ -157,7 +158,7 @@ ADR-004  \x1b[33mProposed\x1b[0m    Docker Deployment
 ADR-005  \x1b[33mProposed\x1b[0m    Redis Caching
 ADR-006  \x1b[33mProposed\x1b[0m    Celery Background Tasks
 ADR-007  \x1b[33mProposed\x1b[0m    RBAC Authorization"""
-for line in list_output.split('\n'):
+for line in list_output.split("\n"):
     gen.output_line(line, 0.05)
 gen.wait(2.5)
 gen.output_line("")
@@ -185,7 +186,7 @@ Use JWT tokens for authentication.
 
 \x1b[1;34mConfidence\x1b[0m
 \x1b[1;32m96%\x1b[0m"""
-for line in adr_output.split('\n'):
+for line in adr_output.split("\n"):
     gen.output_line(line, 0.05)
 gen.wait(3.5)
 gen.output_line("")
@@ -212,7 +213,7 @@ ADR-004  \x1b[33mProposed\x1b[0m    Docker Deployment
 ADR-005  \x1b[33mProposed\x1b[0m    Redis Caching
 ADR-006  \x1b[33mProposed\x1b[0m    Celery Background Tasks
 ADR-007  \x1b[33mProposed\x1b[0m    RBAC Authorization"""
-for line in list_output_2.split('\n'):
+for line in list_output_2.split("\n"):
     gen.output_line(line, 0.05)
 gen.wait(3.5)
 
@@ -268,7 +269,7 @@ help_output = """\x1b[1mUsage: decisiondrift [OPTIONS] COMMAND [ARGS]...\x1b[0m
   bootstrap  Bootstrap ADRs from an existing repository.
   adr        Manage Architecture Decision Records.
   audit      Audit the repository for decision drift."""
-for line in help_output.split('\n'):
+for line in help_output.split("\n"):
     gen.output_line(line, 0.05)
 gen.wait(2.0)
 

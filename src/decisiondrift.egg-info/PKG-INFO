@@ -42,7 +42,15 @@ Requires-Dist: tree-sitter-languages>=1.10.0; extra == "ast"
 
 # DecisionDrift
 
+[![PyPI](https://img.shields.io/pypi/v/decisiondrift)](https://pypi.org/project/decisiondrift/)
+[![Python Version](https://img.shields.io/pypi/pyversions/decisiondrift)](https://pypi.org/project/decisiondrift/)
+[![CI](https://github.com/madhan-karthikeyan/DecisionDrift/actions/workflows/ci.yml/badge.svg)](https://github.com/madhan-karthikeyan/DecisionDrift/actions/workflows/ci.yml)
+[![License](https://img.shields.io/pypi/l/decisiondrift)](https://github.com/madhan-karthikeyan/DecisionDrift/blob/main/LICENSE)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+
 **Deterministic-first decision governance.** Codify architecture decisions as enforceable rules, detect drift before it reaches production, and keep your codebase aligned with documented decisions.
+
+![DecisionDrift Demo](demo.gif)
 
 ```
 Repository ADRs (docs/adr/)
