@@ -159,7 +159,7 @@ Each benchmark records: repo size, languages, bootstrap runtime, ADRs generated,
 | LLM bootstrap | Deterministic V3 is more reliable |
 | Embeddings | Keyword retrieval achieves 95.2% Recall@5 |
 | LangGraph / agents | Linear pipeline is sufficient |
-| Test generation | Different product, out of scope |
+| Test generation | Deliberately deferred to keep the product focused on architecture governance |
 
 ---
 

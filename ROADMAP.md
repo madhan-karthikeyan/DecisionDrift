@@ -40,7 +40,7 @@ To keep DecisionDrift fast, focused, and secure, the following features are inte
 | **Heavy Database Dependencies** | We will not require PostgreSQL or vector databases (pgvector). The typical ADR corpus is small enough to run fully in-memory with sub-second latency. |
 | **LLM-based Bootstrapping** | While we use LLMs for ingest and review, bootstrapping a repo from scratch using LLMs is too non-deterministic and expensive. We strictly rely on the V3 heuristic engine. |
 | **Complex Agentic Workflows** | LangGraph or complex multi-agent frameworks add unnecessary latency and debugging overhead. DecisionDrift uses a strict, linear pipeline. |
-| **Test Generation** | Generating unit or integration tests based on ADRs is a different product category entirely. |
+| **Test Generation** | Deliberately deferred to keep the product tightly focused on architecture governance. |
 
 ## Contributing
 

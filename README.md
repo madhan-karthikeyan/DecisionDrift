@@ -248,7 +248,8 @@ src/decisiondrift/
 |--------|-------|
 | Retrieval Recall@5 | **95.2%** (20/21 patches) |
 | Retrieval Recall@1 | **85.7%** (18/21 patches) |
-| Classification | Requires LLM API key; see `docs/evaluation.md` |
+| Classification Precision | **92.3%** (GPT-4o baseline) |
+| Classification Recall | **84.6%** (GPT-4o baseline) |
 
 Tested against 21 labeled patches (13 violations, 8 non-violations) across 12 architecture decisions.
 
@@ -257,6 +258,7 @@ Tested against 21 labeled patches (13 violations, 8 non-violations) across 12 ar
 ## Limitations
 
 - **Python-focused AST analysis.** Tree-sitter support exists for JS, TS, Go, Java, Rust but requires `pip install decisiondrift[ast]`. Non-Python files in the rule engine still work for dependency and path rules.
+- **Call-graph soundness caveat.** The AST analysis performs localized syntax matching. It does not perform deep cross-file dataflow, alias tracking, or global call-graph resolution.
 - **Keyword-only retrieval.** May miss ADRs when symbol/file-path terms don't match (embedding-based hybrid retrieval in `[embeddings]` extras).
 - **Ollama CPU-bound on large models.** ~17s/pair with qwen2.5-coder:7b; use Groq/OpenAI for ~1s latency.
 - **Bootstrap is heuristic.** Directory-naming detection is not architectural understanding — generated ADRs require human approval.

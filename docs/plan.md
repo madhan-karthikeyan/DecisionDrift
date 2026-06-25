@@ -203,7 +203,7 @@ Only `accepted` ADRs participate in enforcement. Generated candidates can never 
 | Postgres / pgvector | ADR corpus is small; in-memory is sub-second. |
 | Dashboard / UI | CLI output + GitHub comments are sufficient for V1. |
 | Multi-repo governance | No proven demand. |
-| Test generation | Different product (QA automation). Out of scope. |
+| Test generation | Deliberately deferred to keep the product tightly focused on architecture governance, not QA automation. |
 | LangGraph / agentic workflows | Linear pipeline is sufficient. |
 | Custom security scanner | Existing tools are mature. Integrate, don't build. |
 | LLM bootstrap synthesis | Deterministic V3 is more reliable and cheaper. |
@@ -230,5 +230,6 @@ Assuming real-user feedback confirms demand:
 |------------|--------|------------|
 | Keyword-only retrieval | May miss ADRs when terms don't match | Embedding-based fallback in extras |
 | Python-focused AST | Non-Python enforcement limited to dep/path/config rules | Tree-sitter in `[ast]` extras |
+| Call-graph soundness | AST performs localized syntax matching, not deep dataflow/alias tracking | LLM semantic review provides deeper analysis |
 | Bootstrap is heuristic | Directory detection ≠ architectural understanding | Human approval gate |
 | LLM required for review | Semantic classification not available without API key | Use `enforce` instead |
