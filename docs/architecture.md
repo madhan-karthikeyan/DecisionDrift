@@ -2,129 +2,95 @@
 
 ## CLI Flow
 
-```
-decisiondrift <command> [args]
-       │
-       ├─ bootstrap <path>          Deterministic — no LLM
-       │    └─ scan_repo()
-       │         ├─ structure_scan.py   (dirs, files, indicators)
-       │         ├─ detectors.py        (technologies, frameworks)
-       │         ├─ patterns.py         (pattern matching)
-       │         └─ candidate_generator.py  → ADRSuggestion[]
-       │
-       ├─ enforce [diff|.]           Deterministic — no LLM
-       │    └─ engine.py
-       │         ├─ scan_dependencies()    (5 dep file types)
-       │         ├─ scan_imports()         (Python AST)
-       │         ├─ scan_api_calls()       (Python AST)
-       │         ├─ scan_paths()           (regex)
-       │         └─ scan_config()          (YAML/JSON/TOML/INI)
-       │
-       ├─ audit                      Deterministic — no LLM
-       │    └─ adr_manager/
-       │         ├─ check_drift()
-       │         ├─ check_expiry()
-       │         └─ quality_score()
-       │
-       ├─ review [diff]              Optional LLM
-       │    └─ classification/classifier.py
-       │         ├─ retrieve_adrs()       (keyword/embedding)
-       │         └─ llm_classify()        (pairwise)
-       │
-       ├─ ingest <file>              LLM required
-       │    └─ segmenter → LLM → ADR
-       │
-       ├─ adr list|approve|reject    Deterministic
-       │
-       └─ guard --install            Deterministic
-            └─ pre-commit hook → enforce --from-git
+```mermaid
+graph TD
+    CLI[decisiondrift command] --> B[bootstrap path]
+    CLI --> E[enforce diff/.]
+    CLI --> A[audit]
+    CLI --> R[review diff]
+    CLI --> I[ingest file]
+    CLI --> L[adr list/approve/reject]
+    CLI --> G[guard --install]
+
+    B --> |Deterministic - no LLM| S[scan_repo]
+    S --> SS[structure_scan.py<br>dirs, files, indicators]
+    S --> D[detectors.py<br>technologies, frameworks]
+    S --> P[patterns.py<br>pattern matching]
+    S --> CG[candidate_generator.py<br>ADRSuggestion]
+
+    E --> |Deterministic - no LLM| EN[engine.py]
+    EN --> SD[scan_dependencies<br>5 dep file types]
+    EN --> SI[scan_imports<br>Python AST]
+    EN --> SA[scan_api_calls<br>Python AST]
+    EN --> SP[scan_paths<br>regex]
+    EN --> SC[scan_config<br>YAML/JSON/TOML/INI]
+
+    A --> |Deterministic - no LLM| AM[adr_manager]
+    AM --> CD[check_drift]
+    AM --> CE[check_expiry]
+    AM --> QS[quality_score]
+
+    R --> |Optional LLM| CL[classification/classifier.py]
+    CL --> RA[retrieve_adrs<br>keyword/embedding]
+    CL --> LC[llm_classify<br>pairwise]
+
+    I --> |LLM required| SEG[segmenter]
+    SEG --> LLM[LLM extraction]
+    LLM --> ADR[Generated ADR]
+
+    G --> |Deterministic| PRE[pre-commit hook]
+    PRE --> ENF[enforce --from-git]
 ```
 
 ## Bootstrap Pipeline (V3)
 
-```
-Repository Tree
-      │
-      ▼
-┌─────────────────┐
-│  structure_scan  │  ← walk dir tree (max depth 10), skip noise
-│                  │     collect: dirs, files, indicator_files
-└────────┬────────┘
-         │ ProjectStructure
-         ▼
-┌─────────────────┐
-│    detectors    │  ← detect technologies from deps, files, imports
-│                  │     output: list[TechnologyCandidate]
-└────────┬────────┘
-         │ TechnologyCandidate[]
-         ▼
-┌─────────────────┐
-│    patterns     │  ← match known architecture patterns
-│                  │     e.g. Flask → web framework
-│                  │     e.g. SQLAlchemy → data access
-└────────┬────────┘
-         │ PatternMatch[]
-         ▼
-┌─────────────────┐
-│      v3.py      │  ← governance logic
-│                  │     suppress non-decision patterns
-│                  │     assign confidence levels
-│                  │     generate ADRSuggestion[]
-└────────┬────────┘
-         │ ADRSuggestion[]
-         ▼
-┌─────────────────┐
-│  template_gen   │  ← render ADR markdown files
-└─────────────────┘
+```mermaid
+graph TD
+    RT[Repository Tree] --> SS
+    
+    subgraph Engine
+        SS[structure_scan<br>walk dir tree, skip noise<br>collect: dirs, files, indicators] --> |ProjectStructure| D
+        D[detectors<br>detect technologies from deps/files/imports] --> |TechnologyCandidate| P
+        P[patterns<br>match known architecture patterns] --> |PatternMatch| V[v3.py governance logic<br>suppress non-decision patterns<br>assign confidence levels]
+        V --> |ADRSuggestion| T[template_gen<br>render ADR markdown files]
+    end
 ```
 
 ## Rule Engine
 
-```
-Accepted ADRs
-      │
-      ▼
-┌─────────────────────┐
-│    rule_generator   │  ← parse ADR frontmatter, prohibitions
-│   (adr/rule_gen.)   │     output: RuleSet per ADR
-└──────────┬──────────┘
-           │ RuleSet (dependency, import, api, path, config)
-           ▼
-┌─────────────────────┐
-│      engine.py      │  ← scan diff or repo against rules
-│                      │
-│  ┌───────────────┐  │
-│  │ dep scanner   │  │  requirements.txt, pyproject.toml,
-│  │               │  │  package.json, go.mod, Cargo.toml
-│  └───────────────┘  │
-│  ┌───────────────┐  │
-│  │ import scanner│  │  Python AST import traversal
-│  └───────────────┘  │
-│  ┌───────────────┐  │
-│  │ api scanner   │  │  Python AST method/function calls
-│  └───────────────┘  │
-│  ┌───────────────┐  │
-│  │ path scanner  │  │  regex match on file paths
-│  └───────────────┘  │
-│  ┌───────────────┐  │
-│  │ config scanner│  │  key-value match in config files
-│  └───────────────┘  │
-└──────────┬──────────┘
-           │ EnforcementFinding[]
-           ▼
-    Exit code (0/1) + Report
+```mermaid
+graph TD
+    A[Accepted ADRs] --> RG
+    
+    RG[rule_generator<br>parse frontmatter, prohibitions] --> |RuleSet: dependency, import, api, path, config| E
+    
+    subgraph engine.py
+        E[scan diff or repo against rules]
+        E --> D[dep scanner<br>requirements, package.json, go.mod]
+        E --> I[import scanner<br>AST import traversal]
+        E --> API[api scanner<br>AST method/function calls]
+        E --> P[path scanner<br>regex match on paths]
+        E --> C[config scanner<br>key-value match]
+    end
+    
+    D --> F[EnforcementFinding]
+    I --> F
+    API --> F
+    P --> F
+    C --> F
+    
+    F --> X[Exit code 0/1 + Report]
 ```
 
 ## ADR Lifecycle
 
+```mermaid
+stateDiagram-v2
+    [*] --> proposed: bootstrap
+    proposed --> accepted: approve
+    proposed --> rejected: reject
+    accepted --> deprecated: deprecate
+    accepted --> superseded: supersede
+    
+    note right of accepted: Only accepted ADRs<br>generate enforcement rules
 ```
-bootstrap ──→ proposed ──→ accepted ──→ [enforced]
-                 │              │
-                 │              ├──→ deprecated
-                 │              │
-                 │              └──→ superseded
-                 │
-                 └──→ rejected
-```
-
-Only `accepted` ADRs generate enforcement rules.

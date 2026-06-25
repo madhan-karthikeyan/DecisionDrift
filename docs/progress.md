@@ -74,18 +74,18 @@ v1.0 Release
 | C2 | Run bootstrap on each: record runtime, ADRs generated, rules, false positives | Critical |
 | C3 | Manual review: what fraction of generated ADRs are approvable? (target: ≥80%) | Critical |
 | C4 | Add regression tests for every real false positive | Critical |
-| C5 | Build `benchmarks/` directory with fixtures, expected outputs, runner script | High |
-| C6 | Update benchmark script to output validation results | High |
+| C5 | Build `benchmarks/` directory with fixtures, expected outputs, runner script | ✅ |
+| C6 | Update benchmark script to output validation results | ✅ |
 
 ### Phase D: Repository Polish (Week 3–4)
 
 | Step | Detail | Priority |
 |------|--------|----------|
-| D1 | Demo GIF (asciinema) showing bootstrap → enforce → violation output | High |
-| D2 | Architecture diagrams for README | Medium |
-| D3 | ROADMAP.md — built, planned, explicitly not planned | Medium |
-| D4 | License + pyproject.toml metadata | Medium |
-| D5 | GitHub topics, description, website URL | Low |
+| D1 | Demo GIF (asciinema) showing bootstrap → enforce → violation output | ✅ |
+| D2 | Architecture diagrams for README | ✅ |
+| D3 | ROADMAP.md — built, planned, explicitly not planned | ✅ |
+| D4 | License + pyproject.toml metadata | ✅ |
+| D5 | GitHub topics, description, website URL | ✅ |
 
 ### Phase E: First External Users (Week 4–5)
 

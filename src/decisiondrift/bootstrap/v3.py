@@ -269,12 +269,6 @@ DECISION_TEMPLATES: dict[str, tuple[str, str, list[str], str]] = {
         ["flask", "fastapi"],
         "Runtime evidence indicates this repository uses Django as its primary web framework.",
     ),
-    "Express": (
-        "Use Express for Node HTTP Services",
-        "technology_choice",
-        ["fastify", "koa"],
-        "Runtime evidence indicates this repository uses Express for HTTP services.",
-    ),
     "SQLAlchemy": (
         "Use SQLAlchemy for relational persistence",
         "data_access",

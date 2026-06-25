@@ -10,18 +10,13 @@
 
 ![DecisionDrift Demo](demo.gif)
 
-```
-Repository ADRs (docs/adr/)
-         │
-    ┌────┴────┐
-    │         │
- enforce    review
-(determi-  (LLM-based
-nistic)    classification)
-    │         │
-    └────┬────┘
-         │
-   PR comment / CLI report
+```mermaid
+graph TD
+    A[Repository ADRs<br>docs/adr/] --> B{Action}
+    B -->|Deterministic| E[decisiondrift enforce]
+    B -->|LLM-based| R[decisiondrift review]
+    E --> C[PR comment / CLI report]
+    R --> C
 ```
 
 ## How It Works
