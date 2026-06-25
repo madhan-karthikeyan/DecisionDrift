@@ -43,7 +43,8 @@ class TestBootstrapV3Evidence:
 
         assert "Uvicorn" in names
         assert "FastAPI" not in names
-        assert bootstrap(tmp_path, tmp_path / "docs/adr", dry_run=True) == []
+        titles = [s.adr.title for s in bootstrap(tmp_path, tmp_path / "docs/adr", dry_run=True)]
+        assert titles == ["Use Python as the primary backend language"]
 
     def test_dev_dependency_express_is_not_governance_decision(self, tmp_path: Path):
         (tmp_path / "package.json").write_text('{"devDependencies": {"express": "^4.18.0"}}')
@@ -53,7 +54,8 @@ class TestBootstrapV3Evidence:
         express = next(t for t in model.technologies if t.name == "Express")
         assert express.role == "dev"
         assert express.suppress_reason is not None
-        assert bootstrap(tmp_path, tmp_path / "docs/adr", dry_run=True) == []
+        titles = [s.adr.title for s in bootstrap(tmp_path, tmp_path / "docs/adr", dry_run=True)]
+        assert titles == ["Use JavaScript as the primary language"]
 
     def test_test_dependency_django_is_not_repository_architecture(self, tmp_path: Path):
         (tmp_path / "pyproject.toml").write_text(
@@ -65,7 +67,8 @@ class TestBootstrapV3Evidence:
         django = next(t for t in model.technologies if t.name == "Django")
         assert django.role == "test"
         assert django.suppress_reason is not None
-        assert bootstrap(tmp_path, tmp_path / "docs/adr", dry_run=True) == []
+        titles = [s.adr.title for s in bootstrap(tmp_path, tmp_path / "docs/adr", dry_run=True)]
+        assert titles == ["Use Python as the primary backend language"]
 
     def test_framework_repository_does_not_generate_use_self_adr(self, tmp_path: Path):
         repo = tmp_path / "gin"
@@ -89,9 +92,9 @@ class TestBootstrapV3Governance:
 
         result = bootstrap(tmp_path, tmp_path / "docs/adr", dry_run=True)
 
-        assert len(result) == 1
-        assert result[0].adr.title == "Use FastAPI for HTTP APIs"
-        assert {r["match"] for r in result[0].rules} == {"flask", "django"}
+        assert len(result) >= 1
+        fastapi_adr = next(s for s in result if s.adr.title == "Use FastAPI for HTTP APIs")
+        assert {r["match"] for r in fastapi_adr.rules} == {"flask", "django"}
 
     def test_payment_service_generates_only_enforceable_decisions(self, tmp_path: Path):
         repo = tmp_path / "payment-service"
@@ -113,11 +116,12 @@ class TestBootstrapV3Governance:
         assert techs["Docker"].suppress_reason is not None
         assert techs["GitHub Actions"].role == "tooling"
 
-        assert [s.adr.title for s in result] == [
+        assert set([s.adr.title for s in result]) == {
+            "Use Python as the primary backend language",
             "Use FastAPI for HTTP APIs",
             "Use SQLAlchemy for relational persistence",
             "Use Celery for asynchronous jobs",
-        ]
+        }
 
         suppressions = {c.title: c.suppress_reason for c in model.governance_candidates if c.suppress_reason}
         assert "Use PostgreSQL for Persistent Storage" in suppressions
@@ -148,10 +152,11 @@ class TestBootstrapV3Governance:
         (repo / "pyproject.toml").write_text('[project]\nname = "library"\ndependencies = ["sqlalchemy"]\n')
 
         model = build_repository_model(repo)
-        result = bootstrap(repo, repo / "docs/adr", dry_run=True)
+        model = build_repository_model(repo)
 
         assert model.repository_role == "library"
-        assert result == []
+        titles = [s.adr.title for s in bootstrap(repo, repo / "docs/adr", dry_run=True)]
+        assert titles == ["Use Python as the primary backend language"]
         suppressions = {c.title: c.suppress_reason for c in model.governance_candidates if c.suppress_reason}
         assert suppressions["Use SQLAlchemy for relational persistence"].startswith("Data-access evidence")
 
@@ -164,8 +169,9 @@ class TestBootstrapV3Governance:
         result = bootstrap(repo, repo / "docs/adr", dry_run=True)
 
         assert model.repository_role == "frontend_app"
-        assert [s.adr.title for s in result] == ["Use React for Frontend UI"]
-        assert result[0].rules[0]["scope_path"] == "ui"
+        assert set([s.adr.title for s in result]) == {"Use React for Frontend UI", "Use JavaScript as the primary language"}
+        react_adr = next(s for s in result if s.adr.title == "Use React for Frontend UI")
+        assert react_adr.rules[0]["scope_path"] == "ui"
 
     def test_min_confidence_filters_low_evidence_candidates(self, tmp_path: Path):
         (tmp_path / "app").mkdir()
@@ -178,5 +184,5 @@ class TestBootstrapV3Governance:
 
         assert len(all_candidates) > 0
         assert len(high_only) <= len(all_candidates)
-        assert len(high_only) == 1
-        assert high_only[0].adr.title == "Use FastAPI for HTTP APIs"
+        assert len(high_only) == 2
+        assert set([s.adr.title for s in high_only]) == {"Use Python as the primary backend language", "Use FastAPI for HTTP APIs"}

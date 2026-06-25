@@ -15,6 +15,8 @@ REPO_DIR = Path(__file__).parent.parent.parent / "repos" / "apexs_swe"
 ADR_DIR = REPO_DIR / "docs" / "adr"
 DOCKER_FIXTURE = REPO_DIR / "backend" / "app" / "core" / "docker_config.py"
 
+pytestmark = pytest.mark.skipif(not REPO_DIR.exists(), reason="Test repo not found")
+
 # Check if Ollama is running locally
 _ollama_running = False
 try:

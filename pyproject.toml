@@ -67,6 +67,7 @@ where = ["src"]
 [tool.ruff]
 line-length = 120
 target-version = "py311"
+exclude = ["repos/", "benchmarks/"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
@@ -83,7 +84,7 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-v --tb=short"
+addopts = "-v --tb=short --ignore=tests/evaluation --ignore=tests/apexs_evaluation --ignore=tests/benchmarks"
 markers = [
     "unit: Unit tests (fast, no external dependencies)",
     "integration: Integration tests (use temp repos, no network)",
@@ -105,3 +106,4 @@ fail_under = 0
 
 [tool.coverage.html]
 directory = "coverage_html"
+

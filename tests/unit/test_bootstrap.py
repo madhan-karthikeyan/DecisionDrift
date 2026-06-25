@@ -142,8 +142,8 @@ class TestBootstrapEdgeCases:
         repo = tmp_path / "test-only"
         repo.mkdir()
         (repo / "requirements.txt").write_text("pytest\npytest-cov\n")
-        result = bootstrap(repo, repo / "docs/adr", dry_run=True)
-        assert result == []
+        titles = [s.adr.title for s in bootstrap(repo, repo / "docs/adr", dry_run=True)]
+        assert titles == ["Use Python as the primary backend language"]
 
     def test_dockerfile_only_detects_docker_but_no_enforceable_adr(self, tmp_path: Path):
         repo = tmp_path / "docker-only"
