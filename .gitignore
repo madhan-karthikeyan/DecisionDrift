@@ -1,5 +1,5 @@
 repos/
-docs/
+docs/adr/
 venv/
 __pycache__/
 *.pyc
