@@ -1,6 +1,6 @@
 import json
 import time
-import os
+
 
 class AsciicastGenerator:
     def __init__(self, filename, width=100, height=30):
@@ -9,13 +9,13 @@ class AsciicastGenerator:
         self.height = height
         self.time = 0.0
         self.events = []
-        
+
     def add_event(self, event_type, data):
         self.events.append([self.time, event_type, data])
-        
+
     def wait(self, duration):
         self.time += duration
-        
+
     def type_command(self, prompt, command, typing_speed=0.08):
         self.add_event("o", prompt)
         self.wait(0.5)
@@ -24,11 +24,11 @@ class AsciicastGenerator:
             self.wait(typing_speed)
         self.wait(0.5)
         self.add_event("o", "\r\n")
-        
+
     def output_line(self, line, delay=0.05):
         self.add_event("o", line + "\r\n")
         self.wait(delay)
-        
+
     def output_text(self, text, delay_per_char=0.0):
         if delay_per_char > 0:
             for char in text:
@@ -36,11 +36,11 @@ class AsciicastGenerator:
                 self.wait(delay_per_char)
         else:
             self.add_event("o", text)
-            
+
     def clear_screen(self):
         self.add_event("o", "\x1b[2J\x1b[H")
         self.wait(0.1)
-        
+
     def save(self):
         with open(self.filename, 'w') as f:
             header = {
