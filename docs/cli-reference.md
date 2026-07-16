@@ -27,8 +27,9 @@ with `--llm`, recognizes unknown technologies and generates ADR templates via LL
 | `--llm-base-url` | — | Custom API base URL (for Ollama, Groq, etc.) |
 | `--min-llm-confidence` | `0.6` | Minimum confidence threshold for LLM results (0.0–1.0) |
 | `--cache-templates` | `false` | Cache LLM-generated ADR templates (opt-in, tech recognition always cached) |
+| `--registry-url` | — | URL to shared technology registry YAML (can be specified multiple times) |
 
-**Layered knowledge precedence:** Project cache (`.decisiondrift/cache.yaml`) > Global cache (`~/.config/decisiondrift/cache.yaml`) > Bundled registry (`default_registry.yaml`) > LLM fallback
+**Layered knowledge precedence:** Remote HTTP registries > Project cache (`.decisiondrift/cache.yaml`) > Global cache (`~/.config/decisiondrift/cache.yaml`) > Bundled registry (`default_registry.yaml`) > LLM fallback
 
 **Exit codes:** `0` on success, `1` on error.
 
@@ -36,7 +37,7 @@ with `--llm`, recognizes unknown technologies and generates ADR templates via LL
 
 Enforce ADR rules against a diff or full repository. **No LLM required.**
 
-Scans 5 rule types: dependency (5 file formats), import (Python AST + Tree-sitter for JS/TS/Go/Java/Rust), API calls (same multi-language), path (regex), config (key-value). Also loads custom rules from `decisiondrift.yml` `rules:` section.
+Scans 5 rule types: dependency (12 file formats), import (Python AST + Tree-sitter for 12 languages), API calls (same multi-language), path (regex), config (key-value). Also loads custom rules from `decisiondrift.yml` `rules:` section.
 
 | Flag | Default | Description |
 |------|---------|-------------|
@@ -45,7 +46,7 @@ Scans 5 rule types: dependency (5 file formats), import (Python AST + Tree-sitte
 | `--repo` | `.` | Repository root |
 | `--adr-dir` | `docs/adr` | ADR directory |
 | `--fail-on` | `block` | Minimum severity for non-zero exit (`block`, `require_approval`, `warn`, `info`) |
-| `--format` | `text` | Output format (`text`, `json`, `sarif`, `markdown`) |
+| `--format` | `text` | Output format (`text`, `json`, `sarif`, `markdown`, `html`) |
 | `--output` | — | Write output to file instead of stdout |
 
 **Output formats:**
@@ -53,6 +54,7 @@ Scans 5 rule types: dependency (5 file formats), import (Python AST + Tree-sitte
 - `json`: Structured JSON via `ReportEnvelope`
 - `sarif`: SARIF v2.1.0 for GitHub code scanning integration
 - `markdown`: Rendered markdown report
+- `html`: Self-contained static HTML page (inline CSS)
 
 **Exit codes:** `0` on no violations, `1` on violations at or above `--fail-on` level.
 
@@ -163,6 +165,14 @@ llm:
   base_url: null      # Use for Ollama, Groq, etc.
 
 adr_dir: docs/adr
+
+# Shared HTTP registry URLs (optional)
+# Technology definitions fetched from these URLs are merged into the registry.
+registry_urls:
+  - https://example.com/team-registry.yaml
+
+# Embedding model for semantic retrieval fallback (requires `pip install decisiondrift[embeddings]`)
+embedding_model: BAAI/bge-small-en-v1.5
 
 # Custom rule packs — additional rules beyond ADR-derived ones.
 # Types: dependency, import, path, api, config

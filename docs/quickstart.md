@@ -134,13 +134,19 @@ rules:
 
 ## Multi-language Support
 
-Install Tree-sitter extras for import and API call scanning in JS/TS/Go/Java/Rust:
+Install Tree-sitter extras for import and API call scanning in JS/TS/Go/Java/Rust/Ruby/PHP/C#/Kotlin/Swift/C/C++:
 
 ```bash
 pip install decisiondrift[ast]
 ```
 
-Without this extra, dependency, path, and config rules work for all languages; import and API rules work for Python only.
+For semantic retrieval fallback (improves ADR matching in review pipeline):
+
+```bash
+pip install decisiondrift[embeddings]
+```
+
+Without the `[ast]` extra, dependency, path, and config rules work for all languages; import and API rules work for Python only.
 
 ## What's next?
 

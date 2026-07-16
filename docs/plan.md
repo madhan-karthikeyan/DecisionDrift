@@ -22,25 +22,30 @@ Decisions → Rules → Enforcement → Drift Detection
 
 ## 2. What's Built
 
-### Shipped (as of v1.0.0-beta.3)
+### Shipped (as of v1.1.0)
 
 | Component | Status | Description |
 |-----------|--------|-------------|
-| Bootstrap V3 | ✅ | Deterministic repository scanning, evidence collection, technology detection, governance candidate generation, enforceability analysis (37 techs, 25 templates) |
+| Bootstrap V3 | ✅ | Deterministic repository scanning, evidence collection, technology detection, governance candidate generation, enforceability analysis (48 techs, 36 templates, 10 ecosystems) |
+| Shared HTTP Registry | ✅ | `--registry-url` / config `registry_urls` — fetch remote technology YAMLs, merge into layered lookup |
 | Rule Engine | ✅ | 5 rule types (dependency, import, API, path, config), deterministic, zero LLM cost |
-| Multi-language Import/API Scanning | ✅ | Tree-sitter for JS/TS/Go/Java/Rust imports + API calls (`pip install decisiondrift[ast]`) |
+| Multi-language Import/API Scanning | ✅ | Tree-sitter for 12 languages: JS/TS/Go/Java/Rust/Ruby/PHP/C#/Kotlin/Swift/C/C++ (`pip install decisiondrift[ast]`) |
+| Dependency Parsers | ✅ | 12 file formats: requirements.txt, pyproject.toml, package.json, go.mod, Cargo.toml, Gemfile, Gemfile.lock, composer.json, .csproj, Package.swift, build.gradle.kts |
 | Custom Rule Packs | ✅ | `decisiondrift.yml` `rules:` section — additional rules merged with ADR-derived rules |
 | Enforcement | ✅ | Diff-based and full-repo modes, confidence-based severity downgrade, exit-code gating |
-| Output Formats | ✅ | `--format text/json/sarif/markdown` + `--output <file>` on enforce |
+| Output Formats | ✅ | `--format text/json/sarif/markdown/html` + `--output <file>` on enforce |
 | Audit | ✅ | ADR health: drift detection, stale/expired ADRs, quality scores, coverage analysis |
 | ADR Lifecycle | ✅ | `adr list/show/approve/reject/deprecate/archive/supersede/edit/history/review` |
 | Decision Capture | ✅ | `ingest` — free-text to ADR candidates (requires LLM key) |
-| Review | ✅ | LLM-based semantic violation classification (requires LLM key) |
+| Review | ✅ | LLM-based semantic violation classification (requires LLM key, cascading retrieval) |
 | Guard | ✅ | Pre-commit hook with deterministic enforcement |
-| Impact | ✅ | Diff parsing, AST extraction, symbol analysis (Python + Tree-sitter multi-language) |
+| Impact | ✅ | Diff parsing, AST extraction, symbol analysis (Python + Tree-sitter 12 languages) |
 | GitHub Action | ✅ | SARIF output, commit status checks, formal PR review (comment/request-changes/auto modes) |
 | `init` Command | ✅ | One-command project setup: bootstrap → approve → hook → config → CI |
-| 363 tests | ✅ | Unit, integration, snapshot — passing |
+| Embedding Retrieval | ✅ | `fastembed`-based semantic fallback after keyword search (`pip install decisiondrift[embeddings]`) |
+| Stable JSON Schema | ✅ | `schema_version: 1` in every JSON output, documented at `docs/report-schema-v1.json` |
+| Language Registry | ✅ | Single `LANGUAGE_REGISTRY` dict replaces duplicated lang_map + TS_LANG_EXTENSIONS |
+| 376 tests | ✅ | Unit, integration, snapshot — passing |
 
 ### Architecture (current)
 
@@ -50,15 +55,16 @@ src/decisiondrift/
   config.py                  # Config loader (YAML + .env + custom rules)
   models/schema.py           # Pydantic models (DecisionRecord, ReportEnvelope, etc.)
   adr/                       # ADR loader, parser, writer, supersession, id allocator, dedup
-  adr_manager/               # adr list/approve/reject/deprecate/supersede/edit/history/review
-  bootstrap/                 # V3 pipeline + registry (37 techs) + cache + LLM knowledge provider
+  bootstrap/                 # V3 pipeline + registry (48 techs) + cache + LLM knowledge provider
   rules/                     # Deterministic rule engine (scanner, engine, models)
   classification/            # LLM classifier
   review/                    # Orchestrator pipeline (diff → retrieval → classification → report)
-  report/                    # Output formatters (text, json, sarif, markdown, GitHub comment)
-  impact/                    # Diff parser + AST extraction (Python + Tree-sitter)
+  report/                    # Output formatters (text, json, sarif, markdown, html)
+  impact/                    # Diff parser + AST extraction (Python + Tree-sitter 12 langs)
+    language_registry.py     # Single source of truth for language metadata
+    treesitter_queries/      # Per-language query modules
   ingest/                    # Free-text → ADR pipeline (segmentation → LLM extraction → dedup → write)
-  retrieval/                 # Keyword-based ADR retrieval
+  retrieval/                 # ADR retrieval (keyword + embedding backends)
   github/                    # GitHub Action adapter, client, comment manager
   llm/                       # LLM client abstraction (OpenAI, Groq, Ollama)
   init/                      # Project initialization service
@@ -98,9 +104,9 @@ src/decisiondrift/
 
 | Type | What It Scans | Method |
 |------|--------------|--------|
-| `dependency` | requirements.txt, pyproject.toml, go.mod, package.json, Cargo.toml | File parsing |
-| `import` | Python + JS/TS/Go/Java/Rust import statements | AST + Tree-sitter |
-| `api` | Function/method calls in Python + JS/TS/Go/Java/Rust | AST + Tree-sitter |
+| `dependency` | requirements.txt, pyproject.toml, go.mod, package.json, Cargo.toml, Gemfile, Gemfile.lock, composer.json, .csproj, Package.swift, build.gradle.kts | File parsing |
+| `import` | Python + 11 Tree-sitter languages | AST + Tree-sitter |
+| `api` | Function/method calls in Python + 11 Tree-sitter languages | AST + Tree-sitter |
 | `path` | File paths and directory structure | Regex matching |
 | `config` | Config file keys/values (.yml, .toml, .ini, .json, .cfg, .env) | Pattern matching |
 
@@ -222,7 +228,7 @@ Only `accepted` ADRs participate in enforcement. Generated candidates can never 
 | LangGraph / agentic workflows | Linear pipeline is sufficient. |
 | Custom security scanner | Existing tools are mature. Integrate, don't build. |
 | LLM bootstrap synthesis | Deterministic V3 is more reliable and cheaper. |
-| Embeddings / hybrid retrieval | Keyword retrieval achieves 95.2% Recall@5 on evaluation set. |
+| Embeddings / hybrid retrieval | Keyword retrieval achieves 95.2% Recall@5 on evaluation set — embedding backend shipped as optional enhancement |
 
 ---
 
@@ -235,7 +241,6 @@ Assuming real-user feedback confirms demand:
 3. **Claude Code / Cursor hook** — decision-aware AI coding
 4. **Decision graph visualization** — ADR relationships as a navigable graph
 5. **Better onboarding** — guided first-run experience
-6. **Embedding fallback** — for repos where keyword retrieval misses context
 
 ---
 
@@ -243,8 +248,8 @@ Assuming real-user feedback confirms demand:
 
 | Limitation | Impact | Mitigation |
 |------------|--------|------------|
-| Keyword-only retrieval | May miss ADRs when terms don't match | Embedding-based fallback in extras |
-| Python-focused AST | Non-Python enforcement limited to dep/path/config rules | ✅ Tree-sitter import/API scanning in `[ast]` extras |
+| Keyword-only retrieval | May miss ADRs when terms don't match | ✅ Embedding-based fallback available via `[embeddings]` extras |
+| Python-focused AST | Non-Python enforcement limited to dep/path/config rules | ✅ Tree-sitter import/API scanning in `[ast]` extras (12 languages) |
 | Call-graph soundness | AST performs localized syntax matching, not deep dataflow/alias tracking | LLM semantic review provides deeper analysis |
 | Bootstrap is heuristic | Directory detection ≠ architectural understanding | Human approval gate |
 | LLM required for review | Semantic classification not available without API key | Use `enforce` instead |

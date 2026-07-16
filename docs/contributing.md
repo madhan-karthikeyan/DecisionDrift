@@ -39,13 +39,14 @@ src/decisiondrift/
   bootstrap/                 # Repository scanning → ADR candidate generation
   rules/                     # Deterministic rule engine (5 rule types)
   adr/                       # ADR file management
-  adr_manager/               # adr lifecycle commands
   classification/            # LLM classifier
   impact/                    # Diff parser + AST extraction (Python + Tree-sitter)
+    language_registry.py     # Single source of truth for all language metadata
+    treesitter_queries/      # Per-language query modules (12 languages)
   ingest/                    # Free-text → ADR pipeline
   init/                      # Project initialization
-  report/                    # Output formatters (text/json/sarif/markdown)
-  retrieval/                 # ADR retrieval
+  report/                    # Output formatters (text/json/sarif/markdown/html)
+  retrieval/                 # ADR retrieval (keyword + embedding)
   review/                    # Orchestrator
   github/                    # GitHub Action adapter
 ```

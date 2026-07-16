@@ -24,7 +24,7 @@ Those tools help you *write and manage* ADRs as files. DecisionDrift goes furthe
 
 ## Does it work with my language/framework?
 
-Yes for dependency/path/config rules (they work with any language). Import and API rules use Python AST by default. Tree-sitter support for JS, TS, Go, Java, Rust is available via `pip install decisiondrift[ast]`.
+**Dependency/path/config rules** work with any language. **Import and API rules** use Python AST by default. Tree-sitter support for JS, TS, Go, Java, Rust, Ruby, PHP, C#, Kotlin, Swift, C, and C++ is available via `pip install decisiondrift[ast]`.
 
 ## Can I define rules without creating an ADR?
 
@@ -40,7 +40,7 @@ rules:
 
 ## What output formats are available?
 
-The `enforce` command supports `--format text|json|sarif|markdown` and `--output <file>`. SARIF output integrates with GitHub code scanning. JSON output uses the unified `ReportEnvelope` schema.
+The `enforce` command supports `--format text|json|sarif|markdown|html` and `--output <file>`. SARIF output integrates with GitHub code scanning. JSON output uses the unified `ReportEnvelope` schema (documented at `docs/report-schema-v1.json`). HTML output generates a self-contained static page with inline CSS.
 
 ## Will it block my PR?
 

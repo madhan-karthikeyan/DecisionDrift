@@ -21,8 +21,8 @@ graph TD
 
     E --> |Deterministic - no LLM| EN[engine.py]
     EN --> SD[scan_dependencies<br>5 dep file types]
-    EN --> SI[scan_imports<br>Python AST + Tree-sitter: JS/TS/Go/Java/Rust]
-    EN --> SA[scan_api_calls<br>Python AST + Tree-sitter: JS/TS/Go/Java/Rust]
+    EN --> SI[scan_imports<br>Python AST + Tree-sitter: 12 languages]
+    EN --> SA[scan_api_calls<br>Python AST + Tree-sitter: 12 languages]
     EN --> SP[scan_paths<br>regex]
     EN --> SC[scan_config<br>YAML/JSON/TOML/INI]
     EN --> CR[custom_rules<br>decisiondrift.yml rules section]
@@ -57,8 +57,9 @@ graph TD
     RT[Repository Tree] --> CE[collect_evidence<br>deps, imports, files, dirs]
 
     subgraph Registry Layer
-        R[TechnologyRegistry<br>default_registry.yaml<br>schema: 1] --> LK[Layered Lookup]
-        GC[Global Cache<br>~/.config/decisiondrift/cache.yaml] --> LK
+    R[TechnologyRegistry<br>default_registry.yaml<br>schema: 1] --> LK[Layered Lookup]
+    HTTP[Remote HTTP Registries<br>--registry-url / config] --> LK
+    GC[Global Cache<br>~/.config/decisiondrift/cache.yaml] --> LK
         PC[Project Cache<br>.decisiondrift/cache.yaml] --> LK
     end
 
@@ -94,8 +95,8 @@ graph TD
     subgraph engine.py
         E[scan diff or repo against rules]
         E --> D[dep scanner<br>requirements, package.json, go.mod]
-        E --> I[import scanner<br>AST: Python + Tree-sitter JS/TS/Go/Java/Rust]
-        E --> API[api scanner<br>AST: Python + Tree-sitter JS/TS/Go/Java/Rust]
+        E --> I[import scanner<br>AST: Python + Tree-sitter 12 languages]
+        E --> API[api scanner<br>AST: Python + Tree-sitter 12 languages]
         E --> P[path scanner<br>regex match on paths]
         E --> C[config scanner<br>key-value match]
     end
@@ -110,7 +111,7 @@ graph TD
     CR[Custom rules] --> F
     
     F --> X[Exit code 0/1 + ReportEnvelope]
-    X --> FM[format_output<br>text / json / sarif / markdown]
+    X --> FM[format_output<br>text / json / sarif / markdown / html]
 ```
 
 ## ADR Lifecycle
@@ -138,6 +139,7 @@ graph LR
     ENV --> J[json: structured data]
     ENV --> S[sarif: SARIF v2.1.0<br>GitHub code scanning]
     ENV --> M[markdown: rendered report]
+    ENV --> H[html: self-contained page]
     
     S --> GA[GitHub Action<br>upload-sarif integration]
 ```
