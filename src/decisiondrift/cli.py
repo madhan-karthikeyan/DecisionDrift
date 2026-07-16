@@ -157,6 +157,53 @@ def bootstrap(path: str, adr_dir: str, dry_run: bool, apply: bool, min_confidenc
 
 
 @cli.command()
+@click.argument("path", type=click.Path(exists=True), default=".")
+@click.option("--adr-dir", default="docs/adr", show_default=True, help="ADR output directory")
+@click.option("--yes", "non_interactive", is_flag=True, help="Non-interactive mode (auto-approve all ADRs)")
+@click.option("--template", type=str, default=None, help="Project template (e.g., fastapi, monorepo)")
+@click.option("--with-ci", "generate_ci", is_flag=True, help="Generate GitHub Actions CI workflow")
+def init_cmd(path: str, adr_dir: str, non_interactive: bool, template: str | None, generate_ci: bool):
+    """Initialize DecisionDrift for a repository.
+
+    Detects project technologies, bootstraps ADRs, prompts for approval,
+    installs pre-commit hook, and generates configuration.
+    """
+    from decisiondrift.init.service import init_project
+    from decisiondrift.models.schema import ReportEnvelope
+    from decisiondrift.report.formatter import format_output
+
+    repo_path = Path(path).resolve()
+    click.echo(f"Initializing DecisionDrift in {repo_path}")
+    click.echo("")
+
+    try:
+        result = init_project(
+            repo_path=repo_path,
+            non_interactive=non_interactive,
+            template=template,
+            adr_dir=adr_dir,
+            generate_ci=generate_ci,
+        )
+
+        click.echo("")
+        click.echo("Done!")
+        click.echo("")
+        for step in result["steps_taken"]:
+            click.echo(f"  ✓ {step}")
+        click.echo("")
+        click.echo("Next steps:")
+        click.echo("  - Review ADRs:  decisiondrift adr list")
+        click.echo("  - Run enforce:  decisiondrift enforce --from-git")
+        click.echo("  - Run audit:    decisiondrift audit")
+        click.echo("  - Edit config:  decisiondrift.yml")
+    except Exception as e:
+        click.echo(f"Error during init: {e}", err=True)
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+
+@cli.command()
 @click.argument("file", type=click.Path(exists=True, dir_okay=False))
 @click.option("--adr-dir", default="docs/adr", show_default=True, help="Path to ADR directory")
 def ingest(file: str, adr_dir: str):
