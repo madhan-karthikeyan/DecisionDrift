@@ -1,3 +1,4 @@
+LICENSE
 README.md
 pyproject.toml
 src/decisiondrift/__init__.py
@@ -22,9 +23,12 @@ src/decisiondrift/adr_manager/commands.py
 src/decisiondrift/bootstrap/__init__.py
 src/decisiondrift/bootstrap/architecture.py
 src/decisiondrift/bootstrap/bootstrapper.py
+src/decisiondrift/bootstrap/cache.py
 src/decisiondrift/bootstrap/candidate_generator.py
 src/decisiondrift/bootstrap/detectors.py
+src/decisiondrift/bootstrap/knowledge_provider.py
 src/decisiondrift/bootstrap/patterns.py
+src/decisiondrift/bootstrap/registry.py
 src/decisiondrift/bootstrap/structure_scan.py
 src/decisiondrift/bootstrap/suggester.py
 src/decisiondrift/bootstrap/synthesis.py
@@ -49,12 +53,15 @@ src/decisiondrift/ingest/__init__.py
 src/decisiondrift/ingest/extractor.py
 src/decisiondrift/ingest/segmenter.py
 src/decisiondrift/ingest/service.py
+src/decisiondrift/init/__init__.py
+src/decisiondrift/init/service.py
 src/decisiondrift/llm/__init__.py
 src/decisiondrift/llm/client.py
 src/decisiondrift/models/__init__.py
 src/decisiondrift/models/schema.py
 src/decisiondrift/report/__init__.py
 src/decisiondrift/report/compiler.py
+src/decisiondrift/report/formatter.py
 src/decisiondrift/report/github_formatter.py
 src/decisiondrift/retrieval/__init__.py
 src/decisiondrift/retrieval/backend.py

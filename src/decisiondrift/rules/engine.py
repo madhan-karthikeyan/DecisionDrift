@@ -16,6 +16,7 @@ from decisiondrift.rules.models import (
     RuleType,
 )
 from decisiondrift.rules.scanner import (
+    TS_LANG_EXTENSIONS,
     match_dependency_rules,
     match_import_rules,
 )
@@ -26,16 +27,6 @@ from decisiondrift.utils.dependency_parser import (
     parse_pyproject_toml,
     parse_requirements_txt,
 )
-
-TS_LANG_EXTENSIONS: dict[str, str] = {
-    ".js": "javascript",
-    ".ts": "typescript",
-    ".tsx": "tsx",
-    ".jsx": "javascript",
-    ".go": "go",
-    ".java": "java",
-    ".rs": "rust",
-}
 
 
 def enforce(

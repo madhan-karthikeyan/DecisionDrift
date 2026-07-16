@@ -5,6 +5,10 @@ from pathlib import Path
 from typing import Any
 
 from decisiondrift.impact.ast_treesitter import HAS_TREESITTER, extract_imports_treesitter
+from decisiondrift.impact.language_registry import (
+    EXTENSION_TO_LANGUAGE,
+    LANGUAGE_REGISTRY,
+)
 from decisiondrift.rules.models import Rule, RuleMatch, RuleType
 from decisiondrift.utils.dependency_parser import (
     parse_cargo_toml,
@@ -114,13 +118,10 @@ def _find_dep_file_containing(repo: Path, match: str) -> str | None:
 
 
 TS_LANG_EXTENSIONS: dict[str, str] = {
-    ".js": "javascript",
-    ".ts": "typescript",
-    ".tsx": "tsx",
-    ".jsx": "javascript",
-    ".go": "go",
-    ".java": "java",
-    ".rs": "rust",
+    ext: lang
+    for lang, info in LANGUAGE_REGISTRY.items()
+    for ext in info.extensions
+    if info.treesitter_grammar
 }
 
 

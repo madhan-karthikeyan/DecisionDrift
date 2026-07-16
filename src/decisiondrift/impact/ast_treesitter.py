@@ -3,7 +3,9 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from decisiondrift.impact.language_registry import LANGUAGE_REGISTRY
 from decisiondrift.impact.models import ChangedSymbol
+from decisiondrift.impact.treesitter_queries import get_query
 
 try:
     from tree_sitter_languages import get_language, get_parser
@@ -13,59 +15,15 @@ except ImportError:
     HAS_TREESITTER = False
 
 
-def _get_query(lang_name: str) -> str:
-    """Returns tree-sitter query to extract classes, methods, and functions."""
-    if lang_name in ("javascript", "typescript", "tsx"):
-        return """
-        (class_declaration name: (identifier) @class.name)
-        (method_definition name: (property_identifier) @method.name)
-        (function_declaration name: (identifier) @function.name)
-        (lexical_declaration (variable_declarator name: (identifier) @function.name value: [(arrow_function) (function)]))
-        """
-    elif lang_name == "go":
-        return """
-        (type_spec name: (type_identifier) @class.name type: (struct_type))
-        (method_declaration name: (field_identifier) @method.name)
-        (function_declaration name: (identifier) @function.name)
-        """
-    elif lang_name == "java":
-        return """
-        (class_declaration name: (identifier) @class.name)
-        (method_declaration name: (identifier) @method.name)
-        """
-    elif lang_name == "rust":
-        return """
-        (struct_item name: (type_identifier) @class.name)
-        (impl_item (function_item name: (identifier) @method.name))
-        (function_item name: (identifier) @function.name)
-        """
-    return ""
+def _is_jslik(ts_lang: str) -> bool:
+    return ts_lang in ("javascript", "typescript", "tsx")
 
 
-def _get_import_query(lang_name: str) -> str:
-    """Returns tree-sitter query to extract import/require statements."""
-    if lang_name in ("javascript", "typescript", "tsx"):
-        return """
-        (import_statement source: (string) @import)
-        (call_expression
-          function: (identifier) @require
-          (#eq? @require "require")
-          arguments: (arguments (string) @import))
-        """
-    elif lang_name == "go":
-        return """
-        (import_spec path: (interpreted_string_literal) @import)
-        """
-    elif lang_name == "java":
-        return """
-        (import_declaration name: (scoped_identifier) @import)
-        """
-    elif lang_name == "rust":
-        return """
-        (use_declaration argument: (use_path (identifier) @import))
-        (extern_crate_declaration name: (identifier) @import)
-        """
-    return ""
+def _ts_language(language: str) -> str | None:
+    info = LANGUAGE_REGISTRY.get(language.lower())
+    if info and info.treesitter_grammar:
+        return info.treesitter_grammar
+    return None
 
 
 def extract_symbols_treesitter(file_path: str, language: str, source: str | None = None) -> list[ChangedSymbol]:
@@ -73,16 +31,7 @@ def extract_symbols_treesitter(file_path: str, language: str, source: str | None
         print("Warning: tree-sitter not installed. Run `pip install decisiondrift[ast]`", file=sys.stderr)
         return []
 
-    lang_map = {
-        "javascript": "javascript",
-        "typescript": "typescript",
-        "tsx": "tsx",
-        "go": "go",
-        "java": "java",
-        "rust": "rust",
-    }
-
-    ts_lang = lang_map.get(language.lower())
+    ts_lang = _ts_language(language)
     if not ts_lang:
         return []
 
@@ -101,7 +50,7 @@ def extract_symbols_treesitter(file_path: str, language: str, source: str | None
         return []
 
     tree = parser.parse(bytes(source, "utf8"))
-    query_str = _get_query(ts_lang)
+    query_str = get_query(language.lower(), "symbols")
     if not query_str:
         return []
 
@@ -142,16 +91,7 @@ def extract_imports_treesitter(file_path: str, language: str, source: str | None
     if not HAS_TREESITTER:
         return []
 
-    lang_map = {
-        "javascript": "javascript",
-        "typescript": "typescript",
-        "tsx": "tsx",
-        "go": "go",
-        "java": "java",
-        "rust": "rust",
-    }
-
-    ts_lang = lang_map.get(language.lower())
+    ts_lang = _ts_language(language)
     if not ts_lang:
         return []
 
@@ -168,7 +108,7 @@ def extract_imports_treesitter(file_path: str, language: str, source: str | None
         return []
 
     tree = parser.parse(bytes(source, "utf8"))
-    query_str = _get_import_query(ts_lang)
+    query_str = get_query(language.lower(), "imports")
     if not query_str:
         return []
 
@@ -188,31 +128,36 @@ def extract_imports_treesitter(file_path: str, language: str, source: str | None
             continue
 
         name = raw.strip("\"'")
+
         if capture_name == "require":
             continue
 
-        if language in ("javascript", "typescript", "tsx"):
+        if _is_jslik(ts_lang):
             if name.startswith(".") or name.startswith("/"):
                 continue
             top = name.split("/")[0]
             if top and top not in seen:
                 seen.add(top)
                 imports.append(top)
-        elif language == "go":
+        elif ts_lang == "go":
             parts = name.strip("\"").split("/")
             if parts and parts[0] not in seen:
                 seen.add(parts[0])
                 imports.append(parts[0])
-        elif language == "java":
+        elif ts_lang == "java":
             top = name.split(".")[0]
             if top and top not in seen:
                 seen.add(top)
                 imports.append(top)
-        elif language == "rust":
+        elif ts_lang == "rust":
             top = name.split(":")[0].strip()
             if top and top not in seen:
                 seen.add(top)
                 imports.append(top)
+        else:
+            if name and name not in seen:
+                seen.add(name)
+                imports.append(name)
 
     return imports
 
@@ -221,16 +166,7 @@ def extract_api_calls_treesitter(file_path: str, language: str, source: str | No
     if not HAS_TREESITTER:
         return []
 
-    lang_map = {
-        "javascript": "javascript",
-        "typescript": "typescript",
-        "tsx": "tsx",
-        "go": "go",
-        "java": "java",
-        "rust": "rust",
-    }
-
-    ts_lang = lang_map.get(language.lower())
+    ts_lang = _ts_language(language)
     if not ts_lang:
         return []
 
@@ -247,27 +183,8 @@ def extract_api_calls_treesitter(file_path: str, language: str, source: str | No
         return []
 
     tree = parser.parse(bytes(source, "utf8"))
-
-    if ts_lang in ("javascript", "typescript", "tsx"):
-        query_str = """
-        (call_expression function: (member_expression property: (property_identifier) @call))
-        (call_expression function: (identifier) @call)
-        """
-    elif ts_lang == "go":
-        query_str = """
-        (call_expression function: (selector_expression field: (field_identifier) @call))
-        (call_expression function: (identifier) @call)
-        """
-    elif ts_lang == "java":
-        query_str = """
-        (method_invocation name: (identifier) @call)
-        """
-    elif ts_lang == "rust":
-        query_str = """
-        (call_expression function: (field_expression field: (field_identifier) @call))
-        (call_expression function: (identifier) @call)
-        """
-    else:
+    query_str = get_query(language.lower(), "api_calls")
+    if not query_str:
         return []
 
     try:
