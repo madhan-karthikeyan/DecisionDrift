@@ -1,3 +1,31 @@
+# v1.0.0-beta.4 — HTML Output, Shared HTTP Registry, README Rewrite
+
+## Highlights
+
+- **HTML output format** — `--format html` generates a self-contained static HTML page with inline CSS, summary table, and action-colored findings badges. Ideal for CI artifact upload.
+- **Shared HTTP registry** — `--registry-url <URL>` (CLI or `registry_urls` in config) fetches remote technology definition YAMLs and merges them into the registry layer stack.
+- **README rewritten for clarity** — friendly tone, "What is this" section, situational use-case table, all technical docs moved to `docs/`.
+
+## What's New
+
+| Change | Details |
+|--------|---------|
+| HTML formatter | `_format_html()` in `formatter.py` renders full HTML report with inline CSS, badges, summary stats |
+| Shared HTTP registry | `_load_yaml_from_url()` fetches remote YAML; `load_registry()` accepts `registry_urls` param; bundled → remote → cache → project layering |
+| CLI `--registry-url` | Repeatable flag on `bootstrap`; auto-merged from config `registry_urls` |
+| `registry_urls` config | New `decisiondrift.yml` key for persistent remote registry configuration |
+| README rewrite | Focused on "install → init → enforce" loop; architecture/CLI details moved to `docs/` |
+
+## Installation
+
+```bash
+pip install decisiondrift
+# or
+pipx install decisiondrift
+```
+
+---
+
 # v1.0.0-beta.1 — Release Engineering & Audit Hardening
 
 ## Highlights
