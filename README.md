@@ -58,6 +58,16 @@ decisiondrift enforce --from-git
 | [`docs/architecture.md`](docs/architecture.md) | System design and data flow |
 | [`docs/evaluation.md`](docs/evaluation.md) | Retrieval and classification accuracy |
 
+## VS Code Extension
+
+Real-time architecture feedback in your editor. Install from the `.vsix`:
+
+```bash
+code --install-extension extensions/vscode-decisiondrift/vscode-decisiondrift-0.1.0.vsix
+```
+
+Requires `decisiondrift` on `PATH` (`pip install decisiondrift`). Analyzes files on save/open, shows violations as editor diagnostics, and surfaces findings in the sidebar.
+
 ## Examples
 
 **One-command project setup:**

@@ -433,11 +433,13 @@ def impact(diff_file: str | None, repo: str, from_git: bool):
 )
 @click.option("--format", "output_format", default="text", show_default=True, type=click.Choice(["text", "json", "sarif", "markdown", "html"]), help="Output format")
 @click.option("--output", "output_file", type=str, default=None, help="Write output to file instead of stdout")
-def enforce(diff_file: str | None, repo: str, adr_dir: str | None, from_git: bool, staged: bool, fail_on: str, output_format: str, output_file: str | None):
+@click.option("--file", "file_path", type=str, default=None, help="Analyze a single file (editor integration mode)")
+def enforce(diff_file: str | None, repo: str, adr_dir: str | None, from_git: bool, staged: bool, fail_on: str, output_format: str, output_file: str | None, file_path: str | None):
     """Enforce ADR rules against a diff or full repo.
 
     Deterministic rule engine: checks dependencies, imports, paths, APIs, and configs.
     If no diff is provided and --from-git is not set, scans the full repo.
+    Use --file <path> to analyze a single file (editor integration mode).
     """
     from decisiondrift.adr.loader import load_adrs
     from decisiondrift.adr.supersession import resolve_active
@@ -468,7 +470,7 @@ def enforce(diff_file: str | None, repo: str, adr_dir: str | None, from_git: boo
             _emit_output(format_output(env, output_format), output_file)
             return
 
-        result = enforce_from_adrs(active, repo_path=repo, diff_text=diff_text, custom_rules=custom_rules)
+        result = enforce_from_adrs(active, repo_path=repo, diff_text=diff_text, custom_rules=custom_rules, file_path=file_path)
 
         severity_order = {"block": 0, "require_approval": 1, "warn": 2, "info": 3}
         fail_level = severity_order.get(fail_on, 0)
@@ -671,6 +673,163 @@ def _adr_quality_score(record) -> tuple[int, list[str], list[tuple[str, int]]]:
             score -= weight
     score = max(0, score)
     return score, missing, deductions
+
+
+@cli.command()
+@click.option("--repo", default=".", show_default=True, help="Path to repository root")
+@click.option("--adr-dir", default=None, help="Path to ADR directory")
+@click.option("--format", "output_format", default="text", type=click.Choice(["text", "json"]), help="Output format")
+def doctor(repo: str, adr_dir: str | None, output_format: str):
+    """Health diagnostics: check CLI, config, registry, tree-sitter, and LLM setup.
+
+    Returns a structured health report. Exit code 0 if all checks pass, 1 otherwise.
+    """
+    from decisiondrift import __version__
+    from decisiondrift.models.schema import ReportEnvelope
+
+    output_format = output_format or "text"
+    resolved_adr_dir = Path(adr_dir) if adr_dir else Path(repo) / "docs" / "adr"
+
+    checks: dict[str, dict] = {}
+
+    # 1. CLI version
+    checks["cli_version"] = {
+        "name": "CLI version",
+        "status": "ok",
+        "value": __version__,
+    }
+
+    # 2. Config file
+    from decisiondrift.config import find_config, load_config
+
+    cfg_path = find_config(Path(repo))
+    if cfg_path and cfg_path.exists():
+        checks["config"] = {
+            "name": "Config file",
+            "status": "ok",
+            "value": str(cfg_path),
+        }
+        try:
+            load_config(cfg_path)
+        except Exception as e:
+            checks["config"] = {
+                "name": "Config file",
+                "status": "error",
+                "value": f"Parse error: {e}",
+            }
+    else:
+        checks["config"] = {
+            "name": "Config file",
+            "status": "warn",
+            "value": "Not found (optional — uses defaults)",
+        }
+
+    # 3. Registry
+    try:
+        from decisiondrift.bootstrap.registry import load_registry
+
+        reg = load_registry()
+        tech_count = sum(1 for n, p in reg.technologies.items() if n == p.name)
+        checks["registry"] = {
+            "name": "Technology registry",
+            "status": "ok",
+            "value": f"{tech_count} technology profiles loaded",
+        }
+    except Exception as e:
+        checks["registry"] = {
+            "name": "Technology registry",
+            "status": "error",
+            "value": str(e),
+        }
+
+    # 4. Tree-sitter
+    from decisiondrift.impact.ast_treesitter import HAS_TREESITTER
+
+    checks["tree_sitter"] = {
+        "name": "Tree-sitter",
+        "status": "ok" if HAS_TREESITTER else "warn",
+        "value": "Available" if HAS_TREESITTER else "Not installed (run `pip install decisiondrift[ast]`)",
+    }
+
+    # 5. Embeddings
+    try:
+        from decisiondrift.retrieval.embedding import HAS_FASTEMBED
+    except ImportError:
+        HAS_FASTEMBED = False
+    checks["embeddings"] = {
+        "name": "Embeddings",
+        "status": "ok" if HAS_FASTEMBED else "warn",
+        "value": "Available" if HAS_FASTEMBED else "Not installed (run `pip install decisiondrift[embeddings]`)",
+    }
+
+    # 6. ADR directory
+    if resolved_adr_dir.exists():
+        adr_files = list(resolved_adr_dir.glob("ADR-*.md"))
+        checks["adr_dir"] = {
+            "name": "ADR directory",
+            "status": "ok",
+            "value": f"{resolved_adr_dir} ({len(adr_files)} ADRs)",
+        }
+    else:
+        checks["adr_dir"] = {
+            "name": "ADR directory",
+            "status": "warn",
+            "value": f"Not found at {resolved_adr_dir}",
+        }
+
+    # 7. LLM (optional)
+    cfg = load_config()
+    api_key = cfg["llm"].get("api_key")
+    if api_key:
+        try:
+            from decisiondrift.llm.client import LLMClient
+            client = LLMClient(model=cfg["llm"]["model"], api_key=api_key, base_url=cfg["llm"].get("base_url"))
+            checks["llm"] = {
+                "name": "LLM",
+                "status": "ok" if client.available() else "error",
+                "value": f"Model: {cfg['llm']['model']}" if client.available() else "API key configured but not responding",
+            }
+        except Exception as e:
+            checks["llm"] = {
+                "name": "LLM",
+                "status": "error",
+                "value": str(e),
+            }
+    else:
+        checks["llm"] = {
+            "name": "LLM",
+            "status": "warn",
+            "value": "Not configured (required only for `review` and `ingest`)",
+        }
+
+    # Determine overall status
+    statuses = [c["status"] for c in checks.values()]
+    overall = "ok"
+    if "error" in statuses:
+        overall = "error"
+    elif "warn" in statuses:
+        overall = "warn"
+
+    if output_format == "json":
+        env = ReportEnvelope(
+            command="doctor",
+            summary={
+                "status": overall,
+                "findings_count": len(checks),
+            },
+            metadata={"checks": checks},
+        )
+        from decisiondrift.report.formatter import format_output
+        click.echo(format_output(env, "json"))
+    else:
+        click.echo("\nDecisionDrift Health Report")
+        click.echo("=" * 40)
+        for key, check in checks.items():
+            icon = {"ok": "✓", "warn": "⚠", "error": "✗"}.get(check["status"], "?")
+            click.echo(f"  {icon} {check['name']}: {check['value']}")
+        click.echo("")
+
+    sys.exit(0 if overall == "ok" else 1)
 
 
 @cli.command()

@@ -54,8 +54,12 @@ def enforce_from_adrs(
     repo_path: str | Path = ".",
     diff_text: str | None = None,
     custom_rules: RuleSet | None = None,
+    file_path: str | None = None,
 ) -> EnforcementResult:
-    """Convenience: convert ADRs to rules, optionally add custom rules, then enforce."""
+    """Convenience: convert ADRs to rules, optionally add custom rules, then enforce.
+    
+    If file_path is provided, only that file is analyzed (single-file mode).
+    """
     from decisiondrift.adr.rule_generator import _rules_for_adr
 
     all_rules: list[Rule] = []
@@ -63,6 +67,8 @@ def enforce_from_adrs(
         all_rules.extend(_rules_for_adr(adr))
     if custom_rules:
         all_rules.extend(custom_rules.rules)
+    if file_path:
+        return _enforce_file(RuleSet(rules=all_rules), repo_path=repo_path, file_path=file_path)
     return enforce(RuleSet(rules=all_rules), repo_path=repo_path, diff_text=diff_text)
 
 
@@ -131,6 +137,115 @@ def _enforce_diff(
     return EnforcementResult(
         findings=findings,
         files_scanned=len(files),
+        rules_evaluated=rules_evaluated,
+    )
+
+
+def _enforce_file(
+    rules: RuleSet,
+    repo_path: str | Path,
+    file_path: str,
+) -> EnforcementResult:
+    """Analyze a single file against all rules. Used by editor integration."""
+    repo = Path(repo_path)
+    target = repo / file_path
+    if not target.exists() or not target.is_file():
+        return EnforcementResult(findings=[], files_scanned=0, rules_evaluated=0)
+
+    findings: list[EnforcementFinding] = []
+    rules_evaluated = 0
+
+    try:
+        rel = str(target.relative_to(repo))
+    except ValueError:
+        rel = target.name
+
+    ext = target.suffix.lower()
+    lang = "python" if ext == ".py" else TS_LANG_EXTENSIONS.get(ext)
+
+    import_rules = rules.by_type(RuleType.IMPORT)
+    api_rules = rules.by_type(RuleType.API)
+    path_rules = rules.by_type(RuleType.PATH)
+    config_rules = rules.by_type(RuleType.CONFIG)
+
+    if ext == ".py":
+        try:
+            tree = ast.parse(target.read_text(encoding="utf-8", errors="replace"))
+        except (SyntaxError, OSError):
+            tree = None
+        if tree is not None:
+            for rule in import_rules:
+                rules_evaluated += 1
+                for node in ast.walk(tree):
+                    if isinstance(node, ast.Import):
+                        for alias in node.names:
+                            top = alias.name.split(".")[0].lower()
+                            if rule.match == top or top.startswith(rule.match + "."):
+                                findings.append(_to_finding(rule, top, rel))
+                    elif isinstance(node, ast.ImportFrom):
+                        if node.module:
+                            top = node.module.split(".")[0].lower()
+                            if rule.match == top or top.startswith(rule.match + "."):
+                                findings.append(_to_finding(rule, top, rel))
+            for rule in api_rules:
+                rules_evaluated += 1
+                for node in ast.walk(tree):
+                    if isinstance(node, ast.Call):
+                        if isinstance(node.func, ast.Attribute):
+                            parts = []
+                            n = node.func
+                            while isinstance(n, ast.Attribute):
+                                parts.append(n.attr)
+                                n = n.value
+                            if isinstance(n, ast.Name):
+                                parts.append(n.id)
+                            call = ".".join(reversed(parts))
+                            if rule.match in call:
+                                findings.append(_to_finding(rule, call, rel))
+                        elif isinstance(node.func, ast.Name):
+                            call = node.func.id
+                            if rule.match in call:
+                                findings.append(_to_finding(rule, call, rel))
+    elif lang is not None and HAS_TREESITTER:
+        from decisiondrift.impact.ast_treesitter import extract_api_calls_treesitter, extract_imports_treesitter
+        for rule in import_rules:
+            rules_evaluated += 1
+            file_imports = extract_imports_treesitter(str(target), lang)
+            for imp in file_imports:
+                if rule.match == imp or imp.startswith(rule.match + "."):
+                    findings.append(_to_finding(rule, imp, rel))
+        for rule in api_rules:
+            rules_evaluated += 1
+            calls = extract_api_calls_treesitter(str(target), lang)
+            for call in calls:
+                if rule.match in call:
+                    findings.append(_to_finding(rule, call, rel))
+
+    # Path rules: check the file path itself
+    for rule in path_rules:
+        rules_evaluated += 1
+        if re.search(rule.match, rel):
+            findings.append(_to_finding(rule, rel, rel))
+
+    # Config rules: check if this is a config file
+    for rule in config_rules:
+        rules_evaluated += 1
+        if _is_config_file(rel):
+            matches = _scan_config_pattern(target, rule.match)
+            for val in matches:
+                findings.append(_to_finding(rule, val, rel))
+
+    # Dependency rules: check if this is a dependency file
+    deps = _extract_deps_from_file(target)
+    for dep in deps:
+        for rule in rules.by_type(RuleType.DEPENDENCY):
+            rules_evaluated += 1
+            if rule.match in dep.lower():
+                findings.append(_to_finding(rule, dep, rel))
+
+    return EnforcementResult(
+        findings=findings,
+        files_scanned=1,
         rules_evaluated=rules_evaluated,
     )
 
