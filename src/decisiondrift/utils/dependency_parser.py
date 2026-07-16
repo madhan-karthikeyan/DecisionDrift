@@ -146,5 +146,79 @@ def parse_cargo_toml(path: Path) -> tuple[str | None, list[tuple[str, str]]]:
     return package_name, deps
 
 
+def parse_gemfile(path: Path) -> list[tuple[str, str]]:
+    deps: list[tuple[str, str]] = []
+    if not path.exists():
+        return deps
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return deps
+    seen: set[str] = set()
+    in_group: str = "runtime"
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("group"):
+            if "test" in stripped.lower() or "development" in stripped.lower():
+                in_group = "dev"
+            else:
+                in_group = "runtime"
+        elif stripped.startswith("end"):
+            in_group = "runtime"
+        elif stripped.startswith("gem "):
+            parts = stripped.split()
+            if len(parts) >= 2:
+                name = parts[1].strip("\"',")
+                if name and name not in seen:
+                    seen.add(name)
+                    deps.append((name, in_group))
+    return deps
+
+
+def parse_gemfile_lock(path: Path) -> list[tuple[str, str]]:
+    deps: list[tuple[str, str]] = []
+    if not path.exists():
+        return deps
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return deps
+    seen: set[str] = set()
+    in_specs = False
+    for line in text.splitlines():
+        if line.strip().startswith("GEM") and "specs:" in line:
+            in_specs = True
+            continue
+        if in_specs:
+            if line.strip().startswith(" ") and line.strip() != "" and "!" not in line[:5]:
+                name = line.strip().split()[0] if line.strip() else ""
+                name = name.strip("()")
+                if name and name not in seen:
+                    seen.add(name)
+                    deps.append((name, "runtime"))
+            elif line.strip() == "" or line.strip().startswith("PLATFORMS"):
+                in_specs = False
+    return deps
+
+
+def parse_composer_json(path: Path) -> list[tuple[str, str]]:
+    deps: list[tuple[str, str]] = []
+    if not path.exists():
+        return deps
+    try:
+        data = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+    except (OSError, ValueError):
+        return deps
+    seen: set[str] = set()
+    for section, role in (("require", "runtime"), ("require-dev", "dev")):
+        entries = data.get(section, {})
+        if isinstance(entries, dict):
+            for pkg in entries:
+                if pkg and pkg not in seen:
+                    seen.add(pkg)
+                    deps.append((pkg, role))
+    return deps
+
+
 def _dep_name(value: str) -> str:
     return re.split(r"[=<>!~\[ ;]", value.strip())[0].strip()

@@ -12,6 +12,9 @@ from decisiondrift.impact.language_registry import (
 from decisiondrift.rules.models import Rule, RuleMatch, RuleType
 from decisiondrift.utils.dependency_parser import (
     parse_cargo_toml,
+    parse_composer_json,
+    parse_gemfile,
+    parse_gemfile_lock,
     parse_go_mod,
     parse_package_json,
     parse_pyproject_toml,
@@ -48,6 +51,9 @@ def scan_dependencies(repo_path: str | Path) -> list[str]:
         "package.json": parse_package_json,
         "go.mod": _parse_go,
         "Cargo.toml": parse_cargo_toml,
+        "Gemfile": parse_gemfile,
+        "Gemfile.lock": parse_gemfile_lock,
+        "composer.json": parse_composer_json,
     }
 
     for dep_file in repo.rglob("*"):
@@ -99,7 +105,7 @@ def match_dependency_rules(
 
 def _find_dep_file_containing(repo: Path, match: str) -> str | None:
     """Find a dependency file that contains the given match string."""
-    dep_file_names = {"requirements.txt", "pyproject.toml", "package.json", "go.mod", "Cargo.toml"}
+    dep_file_names = {"requirements.txt", "pyproject.toml", "package.json", "go.mod", "Cargo.toml", "Gemfile", "Gemfile.lock", "composer.json"}
     for dep_file in repo.rglob("*"):
         if not dep_file.is_file() or dep_file.name not in dep_file_names:
             continue

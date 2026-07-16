@@ -22,6 +22,9 @@ from decisiondrift.rules.scanner import (
 )
 from decisiondrift.utils.dependency_parser import (
     parse_cargo_toml,
+    parse_composer_json,
+    parse_gemfile,
+    parse_gemfile_lock,
     parse_go_mod,
     parse_package_json,
     parse_pyproject_toml,
@@ -256,6 +259,12 @@ def _extract_deps_from_file(path: Path) -> list[str]:
     if name == "go.mod":
         _module, deps = parse_go_mod(path)
         return deps
+    if name == "Gemfile":
+        return [dep for dep, _role in parse_gemfile(path)]
+    if name == "Gemfile.lock":
+        return [dep for dep, _role in parse_gemfile_lock(path)]
+    if name == "composer.json":
+        return [dep for dep, _role in parse_composer_json(path)]
     return []
 
 
