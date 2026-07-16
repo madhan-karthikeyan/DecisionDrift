@@ -27,6 +27,7 @@ def bootstrap(
     llm_base_url: str | None = None,
     min_llm_confidence: float = 0.6,
     cache_templates: bool = False,
+    registry_urls: list[str] | None = None,
 ) -> list:
     """Scan a repository and generate candidate ADRs.
 
@@ -56,7 +57,7 @@ def bootstrap(
             from decisiondrift.llm.client import LLMClient
 
             llm_client = LLMClient(model=model, api_key=api_key, base_url=base_url)
-            registry = load_registry()
+            registry = load_registry(registry_urls=registry_urls)
             knowledge_provider = KnowledgeProvider(
                 registry=registry,
                 llm_client=llm_client,
@@ -68,7 +69,7 @@ def bootstrap(
         else:
             print("  LLM requested but no API key configured. Set DECISIONDRIFT_LLM_API_KEY or pass --llm-api-key.")
 
-    model = build_repository_model(repo_path, knowledge_provider=knowledge_provider)
+    model = build_repository_model(repo_path, knowledge_provider=knowledge_provider, registry_urls=registry_urls)
     if not model.technologies:
         print("  No technologies detected.")
         return []

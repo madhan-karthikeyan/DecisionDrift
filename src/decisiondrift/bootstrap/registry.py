@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import io
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import httpx
 import yaml
 
 _DEFAULT_REGISTRY_PATH = Path(__file__).parent / "default_registry.yaml"
@@ -74,6 +76,17 @@ def _load_yaml(path: Path) -> dict[str, Any]:
     with open(path) as f:
         raw = yaml.safe_load(f) or {}
     return raw
+
+
+def _load_yaml_from_url(url: str) -> dict[str, Any]:
+    try:
+        resp = httpx.get(url, timeout=15)
+        resp.raise_for_status()
+        raw = yaml.safe_load(io.StringIO(resp.text)) or {}
+        return raw
+    except Exception as e:
+        print(f"Warning: could not load registry from {url}: {e}")
+        return {}
 
 
 def _build_technologies(raw: dict[str, Any]) -> dict[str, TechnologyProfile]:
@@ -159,11 +172,17 @@ def load_registry(
     bundled_path: Path | None = None,
     global_cache_path: Path | None = None,
     project_cache_path: Path | None = None,
+    registry_urls: list[str] | None = None,
 ) -> TechnologyRegistry:
     bundled = _load_yaml(bundled_path or _DEFAULT_REGISTRY_PATH)
     global_cache = _load_yaml(global_cache_path) if global_cache_path and global_cache_path.exists() else {}
     project_cache = _load_yaml(project_cache_path) if project_cache_path and project_cache_path.exists() else {}
     schema = bundled.get("schema_version", 1)
+
+    remote_layers: list[dict[str, Any]] = []
+    if registry_urls:
+        for url in registry_urls:
+            remote_layers.append(_load_yaml_from_url(url))
 
     techs: dict[str, TechnologyProfile] = {}
     gov_templates: dict[str, GovernanceTemplate] = {}
@@ -177,7 +196,7 @@ def load_registry(
     tooling: set[str] = set()
     supporting: set[str] = set()
 
-    for layer in (bundled, global_cache, project_cache):
+    for layer in (bundled, *remote_layers, global_cache, project_cache):
         _merge_into(techs, _build_technologies(layer))
         _merge_into(gov_templates, _build_governance_templates(layer))
         self_framework.update(layer.get("self_framework_repos", {}))

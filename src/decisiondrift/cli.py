@@ -188,9 +188,10 @@ def adr_show(adr_id: str, adr_dir: str):
 @click.option("--llm-base-url", type=str, default=None, help="LLM API base URL (for Ollama, Groq, etc.)")
 @click.option("--min-llm-confidence", type=float, default=0.6, show_default=True, help="Minimum confidence for LLM results (0.0-1.0)")
 @click.option("--cache-templates", is_flag=True, help="Cache LLM-generated ADR templates (opt-in)")
+@click.option("--registry-url", "registry_urls", multiple=True, help="URL to a shared technology registry YAML (can be specified multiple times)")
 def bootstrap(path: str, adr_dir: str, dry_run: bool, apply: bool, min_confidence: str, max_candidates: int | None,
               llm: bool, llm_api_key: str | None, llm_model: str | None, llm_base_url: str | None,
-              min_llm_confidence: float, cache_templates: bool):
+              min_llm_confidence: float, cache_templates: bool, registry_urls: tuple[str, ...] | None):
     """Generate candidate ADRs from repository structure.
 
     Bootstrap V3 uses deterministic evidence collection, repository modeling,
@@ -200,9 +201,17 @@ def bootstrap(path: str, adr_dir: str, dry_run: bool, apply: bool, min_confidenc
     can be generated for unrecognized technologies.
     """
     from decisiondrift.bootstrap.bootstrapper import bootstrap as run_bootstrap
+    from decisiondrift.config import load_config
 
     if apply:
         dry_run = False
+
+    # Merge CLI --registry-url with config file registry_urls
+    cfg = load_config()
+    if registry_urls:
+        urls = list(registry_urls)
+    else:
+        urls = cfg.get("registry_urls", []) or []
 
     try:
         run_bootstrap(
@@ -217,6 +226,7 @@ def bootstrap(path: str, adr_dir: str, dry_run: bool, apply: bool, min_confidenc
             llm_base_url=llm_base_url,
             min_llm_confidence=min_llm_confidence,
             cache_templates=cache_templates,
+            registry_urls=urls or None,
         )
     except Exception as e:
         click.echo(f"Error during bootstrap: {e}", err=True)
@@ -421,7 +431,7 @@ def impact(diff_file: str | None, repo: str, from_git: bool):
     type=click.Choice(["block", "require_approval", "warn", "info"]),
     help="Minimum action level that causes non-zero exit",
 )
-@click.option("--format", "output_format", default="text", show_default=True, type=click.Choice(["text", "json", "sarif", "markdown"]), help="Output format")
+@click.option("--format", "output_format", default="text", show_default=True, type=click.Choice(["text", "json", "sarif", "markdown", "html"]), help="Output format")
 @click.option("--output", "output_file", type=str, default=None, help="Write output to file instead of stdout")
 def enforce(diff_file: str | None, repo: str, adr_dir: str | None, from_git: bool, staged: bool, fail_on: str, output_format: str, output_file: str | None):
     """Enforce ADR rules against a diff or full repo.

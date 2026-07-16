@@ -27,13 +27,16 @@ from decisiondrift.utils.dependency_parser import (
 )
 
 _REGISTRY: Any = None
+_REGISTRY_URLS: tuple[str, ...] = ()
 
 
-def _get_registry():
-    global _REGISTRY
-    if _REGISTRY is None:
+def _get_registry(registry_urls: list[str] | None = None):
+    global _REGISTRY, _REGISTRY_URLS
+    urls_tuple = tuple(registry_urls) if registry_urls else ()
+    if _REGISTRY is None or urls_tuple != _REGISTRY_URLS:
+        _REGISTRY_URLS = urls_tuple
         from decisiondrift.bootstrap.registry import load_registry
-        _REGISTRY = load_registry()
+        _REGISTRY = load_registry(registry_urls=registry_urls)
         _populate_legacy_constants(_REGISTRY)
     return _REGISTRY
 
@@ -186,9 +189,10 @@ SUPPORTING_ONLY_DECISIONS: set[str] = set()
 def build_repository_model(
     repo_path: str | Path,
     knowledge_provider: Any = None,
+    registry_urls: list[str] | None = None,
 ) -> RepositoryModel:
     repo = Path(repo_path)
-    _get_registry()
+    _get_registry(registry_urls=registry_urls)
     evidence = collect_evidence(repo)
     technologies = build_technology_candidates(repo, evidence, knowledge_provider=knowledge_provider)
     repository_role = infer_repository_role(repo, evidence, technologies)

@@ -38,6 +38,7 @@ def load_config(path: Path | None = None) -> dict[str, Any]:
     config.setdefault("wall_clock_budget_seconds", 300)
     config.setdefault("similarity_threshold", 0.5)
     config.setdefault("embedding_model", "BAAI/bge-small-en-v1.5")
+    config.setdefault("registry_urls", [])
     config.setdefault("rules", [])
 
     return config
