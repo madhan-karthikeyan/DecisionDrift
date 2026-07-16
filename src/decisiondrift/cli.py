@@ -15,6 +15,7 @@ from decisiondrift.adr_manager.commands import (
     history_adr,
     list_adrs,
     reject_adr,
+    review_adrs,
     show_adr,
     supersede_adr,
 )
@@ -29,6 +30,16 @@ def cli():
 @cli.group()
 def adr():
     """Manage ADR lifecycle."""
+
+
+@adr.command("review")
+@click.argument("path", type=click.Path(exists=True), default=".", required=False)
+@click.option("--adr-dir", default="docs/adr", show_default=True, help="Path to ADR directory")
+def adr_review(path: str, adr_dir: str):
+    """Run bootstrap and interactively approve/reject candidate ADRs."""
+    result = review_adrs(path, adr_dir)
+    if result["approved"] == 0 and result["total"] > 0:
+        sys.exit(1)
 
 
 @adr.command("list")

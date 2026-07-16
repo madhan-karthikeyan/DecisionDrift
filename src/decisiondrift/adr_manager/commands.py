@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 from decisiondrift.adr.id_allocator import allocate_id
 from decisiondrift.adr.loader import load_adrs
@@ -139,6 +140,58 @@ def edit_adr(adr_dir: str, adr_id: str) -> None:
     except FileNotFoundError:
         print(f"Error: editor '{editor}' not found. Set $EDITOR or $VISUAL.")
         sys.exit(1)
+
+
+def review_adrs(repo_path: str, adr_dir: str) -> dict[str, Any]:
+    """Run bootstrap and interactively approve/reject each candidate ADR."""
+    from decisiondrift.bootstrap.bootstrapper import bootstrap as run_bootstrap
+
+    adr_path = Path(adr_dir)
+    adr_path.mkdir(parents=True, exist_ok=True)
+
+    suggestions = run_bootstrap(
+        repo_path=repo_path,
+        adr_dir=adr_dir,
+        dry_run=False,
+        min_confidence="low",
+    )
+
+    if not suggestions:
+        print("No candidate ADRs generated.")
+        return {"total": 0, "approved": 0}
+
+    approved: list[str] = []
+    total = len(suggestions)
+
+    print(f"\nReviewing {total} candidate ADR(s):")
+    for suggestion in suggestions:
+        adr = suggestion.adr
+        adr_id = adr.id
+        print(f"\n  ── {adr_id}: {adr.title} ──")
+        print(f"     Type: {adr.type or 'N/A'}")
+        print(f"     Severity: {adr.severity}")
+        if adr.prohibitions:
+            print(f"     Prohibitions: {', '.join(adr.prohibitions)}")
+        if adr.rationale:
+            short = adr.rationale[:300].replace("\n", " ")
+            print(f"     Rationale: {short}...")
+        if adr.exceptions:
+            print(f"     Exceptions: {adr.exceptions}")
+
+        resp = input("     Approve this ADR? [Y/n/q (quit)] ").strip().lower()
+        if resp == "q":
+            print("  → Review stopped.")
+            break
+        if resp in ("", "y", "yes"):
+            approve_adr(adr_dir, adr_id)
+            approved.append(adr_id)
+            print(f"     → Approved ✓")
+        else:
+            reject_adr(adr_dir, adr_id, reason="Rejected during review")
+            print(f"     → Rejected ✗")
+
+    print(f"\nReview complete: {len(approved)}/{total} approved.")
+    return {"total": total, "approved": len(approved)}
 
 
 def history_adr(adr_dir: str, adr_id: str) -> None:

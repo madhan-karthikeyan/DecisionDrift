@@ -258,14 +258,23 @@ class TestADRDeprecation:
 
         deprecate_adr(str(adr_dir_with_records), "ADR-9999")
 
-    def test_deprecate_already_rejected_adr_fails(self, adr_dir_with_records: Path):
+    def test_deprecate_rejected_adr_fails(self, adr_dir_with_records: Path):
+        from decisiondrift.adr_manager.commands import deprecate_adr
+        from decisiondrift.adr.parser import parse_adr_file
+
+        deprecate_adr(str(adr_dir_with_records), "ADR-0002")
+        record = parse_adr_file(adr_dir_with_records / "ADR-0002.md")
+        assert record is not None
+        assert record.status != "deprecated"
+
+    def test_deprecate_proposed_adr_succeeds(self, adr_dir_with_records: Path):
         from decisiondrift.adr_manager.commands import deprecate_adr
         from decisiondrift.adr.parser import parse_adr_file
 
         deprecate_adr(str(adr_dir_with_records), "ADR-0003")
         record = parse_adr_file(adr_dir_with_records / "ADR-0003.md")
         assert record is not None
-        assert record.status != "deprecated"
+        assert record.status == "deprecated"
 
     def test_archive_aliases_deprecate(self, adr_dir_with_records: Path):
         from decisiondrift.adr_manager.commands import deprecate_adr
