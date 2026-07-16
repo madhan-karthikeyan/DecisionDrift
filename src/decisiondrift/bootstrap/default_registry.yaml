@@ -1,0 +1,706 @@
+schema_version: 1
+description: "DecisionDrift default technology registry"
+created_at: "2026-07-16"
+
+# --- Technology Facts (objective, reusable) ---
+# Maps dependency/import/file evidence to canonical technology profiles.
+technologies:
+  - name: FastAPI
+    ecosystem: Python
+    category: framework
+    aliases: [fastapi]
+    detection:
+      dependencies: [fastapi]
+      imports: [fastapi]
+      files: []
+      directories: [routers]
+      entrypoints: [fastapi_app]
+    confidence: 0.95
+
+  - name: Flask
+    ecosystem: Python
+    category: framework
+    aliases: [flask]
+    detection:
+      dependencies: [flask]
+      imports: [flask]
+      files: [manage.py]
+      directories: []
+      entrypoints: []
+    confidence: 0.95
+
+  - name: Django
+    ecosystem: Python
+    category: framework
+    aliases: [django]
+    detection:
+      dependencies: [django]
+      imports: [django]
+      files: [manage.py]
+      directories: []
+      entrypoints: []
+    confidence: 0.95
+
+  - name: Express
+    ecosystem: Node.js
+    category: framework
+    aliases: [express]
+    detection:
+      dependencies: [express]
+      imports: [express]
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.90
+
+  - name: Next.js
+    ecosystem: Node.js
+    category: framework
+    aliases: [next]
+    detection:
+      dependencies: [next]
+      imports: [next]
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.90
+
+  - name: NestJS
+    ecosystem: Node.js
+    category: framework
+    aliases: ["@nestjs/core"]
+    detection:
+      dependencies: ["@nestjs/core"]
+      imports: ["@nestjs/core"]
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.90
+
+  - name: Strapi
+    ecosystem: Node.js
+    category: framework
+    aliases: [strapi]
+    detection:
+      dependencies: ["@strapi/strapi", "strapi"]
+      imports: ["@strapi/strapi", "strapi"]
+      files: [favicon.png]
+      directories: []
+      entrypoints: []
+    confidence: 0.60
+
+  - name: Gin
+    ecosystem: Go
+    category: framework
+    aliases: [gin]
+    detection:
+      dependencies: ["github.com/gin-gonic/gin"]
+      imports: ["github.com/gin-gonic/gin"]
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.90
+
+  - name: Actix
+    ecosystem: Rust
+    category: framework
+    aliases: [actix-web]
+    detection:
+      dependencies: ["actix-web"]
+      imports: ["actix-web"]
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.90
+
+  - name: Spring Boot
+    ecosystem: Java
+    category: framework
+    aliases: ["spring-boot"]
+    detection:
+      dependencies: ["spring-boot", "spring-boot-starter-web"]
+      imports: ["org.springframework.boot"]
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.85
+
+  - name: Uvicorn
+    ecosystem: Python
+    category: runtime
+    aliases: [uvicorn]
+    detection:
+      dependencies: [uvicorn]
+      imports: [uvicorn]
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.90
+
+  - name: Tokio
+    ecosystem: Rust
+    category: runtime
+    aliases: [tokio]
+    detection:
+      dependencies: [tokio]
+      imports: [tokio]
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.90
+
+  - name: SQLAlchemy
+    ecosystem: Python
+    category: orm
+    aliases: [sqlalchemy]
+    detection:
+      dependencies: [sqlalchemy]
+      imports: [sqlalchemy]
+      files: []
+      directories: [db]
+      entrypoints: []
+    confidence: 0.95
+
+  - name: Alembic
+    ecosystem: Python
+    category: migration
+    aliases: [alembic]
+    detection:
+      dependencies: [alembic]
+      imports: [alembic]
+      files: [alembic.ini]
+      directories: [migrations, alembic]
+      entrypoints: []
+    confidence: 0.95
+
+  - name: PostgreSQL
+    ecosystem: ""
+    category: database
+    aliases: [psycopg2, psycopg, asyncpg, pg, libpq, pq]
+    detection:
+      dependencies: [psycopg2, psycopg, asyncpg, pg, libpq, pq]
+      imports: []
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.90
+
+  - name: Redis
+    ecosystem: ""
+    category: cache
+    aliases: [redis, ioredis]
+    detection:
+      dependencies: [redis, ioredis]
+      imports: []
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.90
+
+  - name: Celery
+    ecosystem: Python
+    category: queue
+    aliases: [celery]
+    detection:
+      dependencies: [celery]
+      imports: [celery]
+      files: []
+      directories: [tasks]
+      entrypoints: []
+    confidence: 0.90
+
+  - name: React
+    ecosystem: Node.js
+    category: frontend
+    aliases: [react, react-dom]
+    detection:
+      dependencies: [react, react-dom]
+      imports: [react]
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.90
+
+  - name: Vue
+    ecosystem: Node.js
+    category: frontend
+    aliases: [vue]
+    detection:
+      dependencies: [vue]
+      imports: [vue]
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.90
+
+  - name: Tailwind CSS
+    ecosystem: Node.js
+    category: css
+    aliases: [tailwindcss]
+    detection:
+      dependencies: [tailwindcss]
+      imports: []
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.85
+
+  - name: pytest
+    ecosystem: Python
+    category: testing
+    aliases: [pytest]
+    detection:
+      dependencies: [pytest]
+      imports: [pytest]
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.95
+
+  - name: Jest
+    ecosystem: Node.js
+    category: testing
+    aliases: [jest]
+    detection:
+      dependencies: [jest]
+      imports: [jest]
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.95
+
+  - name: Sentry
+    ecosystem: ""
+    category: monitoring
+    aliases: [sentry-sdk]
+    detection:
+      dependencies: [sentry-sdk]
+      imports: [sentry_sdk]
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.85
+
+  - name: JWT
+    ecosystem: ""
+    category: auth
+    aliases: [pyjwt, jwt, jsonwebtoken]
+    detection:
+      dependencies: [pyjwt, jwt, jsonwebtoken]
+      imports: []
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.80
+
+  - name: OAuth
+    ecosystem: ""
+    category: auth
+    aliases: [oauthlib, authlib]
+    detection:
+      dependencies: [oauthlib, authlib]
+      imports: []
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.80
+
+  - name: Passport
+    ecosystem: Node.js
+    category: auth
+    aliases: [passport]
+    detection:
+      dependencies: [passport]
+      imports: [passport]
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.85
+
+  # --- Language technologies ---
+  - name: Python
+    ecosystem: ""
+    category: language
+    aliases: []
+    detection:
+      dependencies: []
+      imports: []
+      files: [pyproject.toml, requirements.txt, setup.py, setup.cfg]
+      directories: []
+      entrypoints: []
+    confidence: 0.95
+
+  - name: JavaScript
+    ecosystem: ""
+    category: language
+    aliases: []
+    detection:
+      dependencies: []
+      imports: []
+      files: [package.json, package-lock.json]
+      directories: []
+      entrypoints: []
+    confidence: 0.95
+
+  - name: TypeScript
+    ecosystem: ""
+    category: language
+    aliases: []
+    detection:
+      dependencies: []
+      imports: []
+      files: [tsconfig.json, tslib]
+      directories: []
+      entrypoints: []
+    confidence: 0.95
+
+  - name: Go
+    ecosystem: ""
+    category: language
+    aliases: []
+    detection:
+      dependencies: []
+      imports: []
+      files: [go.mod]
+      directories: []
+      entrypoints: []
+    confidence: 0.95
+
+  - name: Rust
+    ecosystem: ""
+    category: language
+    aliases: []
+    detection:
+      dependencies: []
+      imports: []
+      files: [Cargo.toml]
+      directories: []
+      entrypoints: []
+    confidence: 0.95
+
+  # --- Container/CI technologies ---
+  - name: Docker
+    ecosystem: ""
+    category: container
+    aliases: [docker]
+    detection:
+      dependencies: [docker]
+      imports: []
+      files: [Dockerfile, docker-compose.yml, docker-compose.yaml]
+      directories: []
+      entrypoints: []
+    confidence: 0.95
+
+  - name: GitHub Actions
+    ecosystem: ""
+    category: ci
+    aliases: []
+    detection:
+      dependencies: []
+      imports: []
+      files: []
+      directories: [".github/workflows"]
+      entrypoints: []
+    confidence: 0.90
+
+# --- Governance Policies (subjective, per-project) ---
+# Maps technologies to ADR templates with prohibitions and rationale.
+governance_templates:
+  - technology: Go
+    decision_type: technology_choice
+    title: "Use Go as the primary backend language"
+    prohibitions: [python, rust, nodejs, java]
+    rationale: "Runtime evidence indicates Go is the primary language."
+
+  - technology: Gin
+    decision_type: technology_choice
+    title: "Use Gin as the backend framework"
+    prohibitions: [echo, fiber]
+    rationale: "Runtime evidence indicates this repository exposes HTTP APIs through Gin."
+
+  - technology: Express
+    decision_type: technology_choice
+    title: "Use Express as the backend framework"
+    prohibitions: [fastify, koa]
+    rationale: "Runtime evidence indicates Express is used for HTTP services."
+
+  - technology: Python
+    decision_type: technology_choice
+    title: "Use Python as the primary backend language"
+    prohibitions: [go, rust, nodejs, java]
+    rationale: "Runtime evidence indicates Python is the primary language."
+
+  - technology: JavaScript
+    decision_type: technology_choice
+    title: "Use JavaScript as the primary language"
+    prohibitions: [typescript]
+    rationale: "Runtime evidence indicates JavaScript is the primary language."
+
+  - technology: TypeScript
+    decision_type: technology_choice
+    title: "Use TypeScript as the primary language"
+    prohibitions: [javascript]
+    rationale: "Runtime evidence indicates TypeScript is the primary language."
+
+  - technology: Rust
+    decision_type: technology_choice
+    title: "Use Rust as the primary backend language"
+    prohibitions: [go, "c++", python]
+    rationale: "Runtime evidence indicates Rust is the primary language."
+
+  - technology: "Node.js"
+    decision_type: technology_choice
+    title: "Use Node.js as the runtime environment"
+    prohibitions: [deno, bun]
+    rationale: "Runtime evidence indicates Node.js is the chosen runtime."
+
+  - technology: "Spring Boot"
+    decision_type: technology_choice
+    title: "Use Spring Boot for Java APIs"
+    prohibitions: [quarkus, micronaut]
+    rationale: "Runtime evidence indicates Spring Boot is used for APIs."
+
+  - technology: NestJS
+    decision_type: technology_choice
+    title: "Use NestJS for Node.js APIs"
+    prohibitions: [express, fastify]
+    rationale: "Runtime evidence indicates NestJS is the primary API framework."
+
+  - technology: "Nuxt.js"
+    decision_type: technology_choice
+    title: "Use Nuxt.js for Vue SSR"
+    prohibitions: ["next.js", sveltekit]
+    rationale: "Runtime evidence indicates Nuxt.js is used for server-side rendering."
+
+  - technology: FastAPI
+    decision_type: technology_choice
+    title: "Use FastAPI for HTTP APIs"
+    prohibitions: [flask, django]
+    rationale: "Runtime evidence indicates this repository exposes HTTP APIs through FastAPI."
+
+  - technology: Flask
+    decision_type: technology_choice
+    title: "Use Flask as Web Framework"
+    prohibitions: [fastapi, django]
+    rationale: "Runtime evidence indicates this repository uses Flask as its HTTP framework."
+
+  - technology: Django
+    decision_type: technology_choice
+    title: "Use Django as Web Framework"
+    prohibitions: [flask, fastapi]
+    rationale: "Runtime evidence indicates this repository uses Django as its primary web framework."
+
+  - technology: SQLAlchemy
+    decision_type: data_access
+    title: "Use SQLAlchemy for relational persistence"
+    prohibitions: [peewee, pony, raw_sql]
+    rationale: "Runtime evidence indicates database access is mediated through SQLAlchemy."
+
+  - technology: PostgreSQL
+    decision_type: data_access
+    title: "Use PostgreSQL for Persistent Storage"
+    prohibitions: [mysql, sqlite, mongodb]
+    rationale: "Runtime evidence indicates PostgreSQL is the selected persistence engine."
+
+  - technology: Redis
+    decision_type: runtime_policy
+    title: "Use Redis for Caching"
+    prohibitions: [memcached]
+    rationale: "Runtime evidence indicates Redis is used for cache or shared in-memory state."
+
+  - technology: Celery
+    decision_type: runtime_policy
+    title: "Use Celery for asynchronous jobs"
+    prohibitions: [rq, dramatiq]
+    rationale: "Runtime evidence indicates asynchronous work is delegated through Celery."
+
+  - technology: Docker
+    decision_type: deployment_policy
+    title: "Use Docker for Containerized Runtime"
+    prohibitions: []
+    rationale: "Container configuration exists for reproducible runtime environments."
+
+  - technology: Alembic
+    decision_type: data_access
+    title: "Use Alembic for Database Migrations"
+    prohibitions: []
+    rationale: "Migration evidence indicates schema changes are versioned through Alembic."
+
+  - technology: React
+    decision_type: technology_choice
+    title: "Use React for Frontend UI"
+    prohibitions: [vue, angular, jquery]
+    rationale: "Runtime evidence indicates frontend UI is built with React."
+
+  - technology: "Next.js"
+    decision_type: technology_choice
+    title: "Use Next.js for Frontend Application"
+    prohibitions: [vite, nuxt]
+    rationale: "Runtime evidence indicates the frontend application is built with Next.js."
+
+  - technology: JWT
+    decision_type: runtime_policy
+    title: "Use JWT for API Authentication"
+    prohibitions: [session-based-auth]
+    rationale: "Runtime evidence indicates stateless token authentication is in use."
+
+# --- Self-framework repos (repo name implies framework) ---
+self_framework_repos:
+  gin: Gin
+  tokio: Tokio
+  actix-web: Actix
+  django: Django
+  fastapi: FastAPI
+  strapi: Strapi
+  "next.js": Next.js
+  nest: NestJS
+
+# --- Test dependencies (force TEST role) ---
+test_dependencies:
+  - pytest
+  - pytest-cov
+  - pytest-asyncio
+  - pytest-xdist
+  - unittest
+  - nose
+  - tox
+  - nox
+  - mocha
+  - jasmine
+  - vitest
+
+# --- File evidence rules ---
+# Maps file names to technology evidence.
+file_evidence:
+  - file: Dockerfile
+    technology: Docker
+    role: runtime
+    level: strong
+    note: "Container runtime definition."
+  - file: docker-compose.yml
+    technology: Docker
+    role: runtime
+    level: strong
+    note: "Container composition definition."
+  - file: docker-compose.yaml
+    technology: Docker
+    role: runtime
+    level: strong
+    note: "Container composition definition."
+  - file: manage.py
+    technology: Django
+    role: runtime
+    level: strong
+    note: "Django management entrypoint."
+  - file: alembic.ini
+    technology: Alembic
+    role: runtime
+    level: strong
+    note: "Alembic migration configuration."
+  - file: package.json
+    technology: JavaScript
+    role: runtime
+    level: strong
+    note: "Node package manifest."
+  - file: pyproject.toml
+    technology: Python
+    role: runtime
+    level: strong
+    note: "Python project manifest."
+  - file: requirements.txt
+    technology: Python
+    role: runtime
+    level: moderate
+    note: "Python dependency manifest."
+  - file: favicon.png
+    technology: Strapi
+    role: unknown
+    level: weak
+    note: "Generic favicon is weak framework evidence."
+
+# --- Directory evidence rules ---
+dir_evidence:
+  - directory: migrations
+    technology: Alembic
+    value: migrations
+    role: runtime
+    level: moderate
+    note: "Migration directory suggests versioned schema changes."
+  - directory: alembic
+    technology: Alembic
+    value: alembic
+    role: runtime
+    level: strong
+    note: "Alembic migration environment detected."
+  - directory: routers
+    technology: FastAPI
+    value: fastapi_routers
+    role: runtime
+    level: strong
+    note: "Router directory indicates HTTP API route organization."
+  - directory: tasks
+    technology: Celery
+    value: celery_tasks
+    role: runtime
+    level: moderate
+    note: "Tasks directory indicates async job processing."
+  - directory: db
+    technology: SQLAlchemy
+    value: relational_persistence
+    role: runtime
+    level: moderate
+    note: "Database module directory indicates relational persistence boundary."
+  - path: ".github/workflows"
+    technology: GitHub Actions
+    value: github_actions
+    role: tooling
+    level: moderate
+    note: "GitHub Actions workflow directory detected."
+
+# --- Language globs ---
+language_evidence:
+  - glob: "*.go"
+    technology: Go
+  - glob: "*.js"
+    technology: JavaScript
+  - glob: "*.ts"
+    technology: TypeScript
+  - glob: "*.rs"
+    technology: Rust
+
+# --- Evidence resolution (maps evidence values to tech names) ---
+# Used when evidence.kind is "file", "directory", or "language"
+evidence_resolution:
+  Docker: [Docker, container]
+  Django: [Django, framework]
+  Alembic: [Alembic, migration]
+  Python: [Python, language]
+  JavaScript: [JavaScript, language]
+  TypeScript: [TypeScript, language]
+  Go: [Go, language]
+  Rust: [Rust, language]
+  Strapi: [Strapi, framework]
+  migrations: [Alembic, migration]
+  alembic: [Alembic, migration]
+  fastapi_app: [FastAPI, framework]
+  github_actions: [GitHub Actions, ci]
+  go.mod: [Go, language]
+  Cargo.toml: [Rust, language]
+
+# --- Technology classification overrides ---
+# Maps technology names to categories when not resolvable from signatures
+category_overrides:
+  Docker: container
+  Python: language
+  JavaScript: language
+  Go: language
+  Rust: language
+  Alembic: migration
+  "GitHub Actions": ci
+
+# --- Enforceability rules ---
+# Technologies that are tooling (not strong governance candidates)
+tooling_decisions: [Docker, GitHub Actions]
+
+# Technologies that are supporting infrastructure only
+supporting_only_decisions: [PostgreSQL, Redis, Alembic]

@@ -115,12 +115,22 @@ def adr_show(adr_id: str, adr_dir: str):
     help="Minimum confidence level",
 )
 @click.option("--max-candidates", type=int, default=None, help="Maximum number of candidate ADRs to generate")
-@click.option("--llm", is_flag=True, help="Deprecated; Bootstrap V3 always uses deterministic inference")
-def bootstrap(path: str, adr_dir: str, dry_run: bool, apply: bool, min_confidence: str, max_candidates: int | None, llm: bool):
+@click.option("--llm", is_flag=True, help="Enable LLM technology recognition for unknown dependencies")
+@click.option("--llm-api-key", type=str, default=None, help="LLM API key (overrides DECISIONDRIFT_LLM_API_KEY)")
+@click.option("--llm-model", type=str, default=None, help="LLM model name (default: gpt-4o)")
+@click.option("--llm-base-url", type=str, default=None, help="LLM API base URL (for Ollama, Groq, etc.)")
+@click.option("--min-llm-confidence", type=float, default=0.6, show_default=True, help="Minimum confidence for LLM results (0.0-1.0)")
+@click.option("--cache-templates", is_flag=True, help="Cache LLM-generated ADR templates (opt-in)")
+def bootstrap(path: str, adr_dir: str, dry_run: bool, apply: bool, min_confidence: str, max_candidates: int | None,
+              llm: bool, llm_api_key: str | None, llm_model: str | None, llm_base_url: str | None,
+              min_llm_confidence: float, cache_templates: bool):
     """Generate candidate ADRs from repository structure.
 
     Bootstrap V3 uses deterministic evidence collection, repository modeling,
     governance candidate discovery, and enforceability analysis.
+
+    With --llm, unknown technologies are recognized via LLM, and ADR templates
+    can be generated for unrecognized technologies.
     """
     from decisiondrift.bootstrap.bootstrapper import bootstrap as run_bootstrap
 
@@ -128,7 +138,19 @@ def bootstrap(path: str, adr_dir: str, dry_run: bool, apply: bool, min_confidenc
         dry_run = False
 
     try:
-        run_bootstrap(path, adr_dir=adr_dir, dry_run=dry_run, min_confidence=min_confidence, max_candidates=max_candidates, use_llm=llm)
+        run_bootstrap(
+            path,
+            adr_dir=adr_dir,
+            dry_run=dry_run,
+            min_confidence=min_confidence,
+            max_candidates=max_candidates,
+            use_llm=llm,
+            llm_api_key=llm_api_key,
+            llm_model=llm_model,
+            llm_base_url=llm_base_url,
+            min_llm_confidence=min_llm_confidence,
+            cache_templates=cache_templates,
+        )
     except Exception as e:
         click.echo(f"Error during bootstrap: {e}", err=True)
         sys.exit(1)

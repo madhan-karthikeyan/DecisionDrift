@@ -4,7 +4,7 @@ import ast
 from collections import Counter
 from enum import StrEnum
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
@@ -25,6 +25,45 @@ from decisiondrift.utils.dependency_parser import (
 from decisiondrift.utils.dependency_parser import (
     parse_requirements_txt as _parse_requirements_txt_shared,
 )
+
+_REGISTRY: Any = None
+
+
+def _get_registry():
+    global _REGISTRY
+    if _REGISTRY is None:
+        from decisiondrift.bootstrap.registry import load_registry
+        _REGISTRY = load_registry()
+        _populate_legacy_constants(_REGISTRY)
+    return _REGISTRY
+
+
+def _populate_legacy_constants(reg) -> None:
+    global TECH_SIGNATURES, DECISION_TEMPLATES, SELF_FRAMEWORK_REPOS
+    global TEST_DEPENDENCIES, TOOLING_DECISIONS, SUPPORTING_ONLY_DECISIONS
+    sigs: dict[str, tuple[str, str, list[str]]] = {}
+    for name, profile in reg.technologies.items():
+        detect = profile.detection
+        dep_names = detect.get("dependencies", [])
+        imp_names = detect.get("imports", [])
+        all_names = dep_names + imp_names + [name.lower()]
+        for n in all_names:
+            sigs[n] = (profile.name, profile.category, list(set(all_names)))
+    TECH_SIGNATURES.clear()
+    TECH_SIGNATURES.update(sigs)
+    templates: dict[str, tuple[str, str, list[str], str]] = {}
+    for tech_name, tmpl in reg.governance_templates.items():
+        templates[tech_name] = (tmpl.title, tmpl.decision_type, tmpl.prohibitions, tmpl.rationale)
+    DECISION_TEMPLATES.clear()
+    DECISION_TEMPLATES.update(templates)
+    SELF_FRAMEWORK_REPOS.clear()
+    SELF_FRAMEWORK_REPOS.update(reg.self_framework_repos)
+    TEST_DEPENDENCIES.clear()
+    TEST_DEPENDENCIES.update(reg.test_dependencies)
+    TOOLING_DECISIONS.clear()
+    TOOLING_DECISIONS.update(reg.tooling_decisions)
+    SUPPORTING_ONLY_DECISIONS.clear()
+    SUPPORTING_ONLY_DECISIONS.update(reg.supporting_only_decisions)
 
 
 class EvidenceLevel(StrEnum):
@@ -94,7 +133,10 @@ class GovernanceDecisionCandidate(BaseModel):
     evidence_level: EvidenceLevel
     evidence: list[Evidence]
     rationale: str
+    prohibitions: list[str] = []
     suppress_reason: str | None = None
+    llm_generated: bool = False
+    technology_name: str = ""
 
 
 class RuleCandidate(BaseModel):
@@ -133,216 +175,22 @@ class RepositoryModel(BaseModel):
     governance_candidates: list[GovernanceDecisionCandidate] = []
 
 
-TECH_SIGNATURES: dict[str, tuple[str, str, list[str]]] = {
-    "fastapi": ("FastAPI", "framework", ["fastapi"]),
-    "flask": ("Flask", "framework", ["flask"]),
-    "django": ("Django", "framework", ["django"]),
-    "express": ("Express", "framework", ["express"]),
-    "next": ("Next.js", "framework", ["next"]),
-    "@nestjs/core": ("NestJS", "framework", ["@nestjs/core"]),
-    "@strapi/strapi": ("Strapi", "framework", ["@strapi/strapi"]),
-    "github.com/gin-gonic/gin": ("Gin", "framework", ["gin-gonic/gin"]),
-    "actix-web": ("Actix", "framework", ["actix-web"]),
-    "tokio": ("Tokio", "runtime", ["tokio"]),
-    "uvicorn": ("Uvicorn", "runtime", ["uvicorn"]),
-    "sqlalchemy": ("SQLAlchemy", "orm", ["sqlalchemy"]),
-    "alembic": ("Alembic", "migration", ["alembic"]),
-    "psycopg2": ("PostgreSQL", "database", ["psycopg2"]),
-    "psycopg": ("PostgreSQL", "database", ["psycopg"]),
-    "asyncpg": ("PostgreSQL", "database", ["asyncpg"]),
-    "pg": ("PostgreSQL", "database", ["pg"]),
-    "libpq": ("PostgreSQL", "database", ["libpq"]),
-    "pq": ("PostgreSQL", "database", ["pq"]),
-    "redis": ("Redis", "cache", ["redis"]),
-    "ioredis": ("Redis", "cache", ["ioredis"]),
-    "celery": ("Celery", "queue", ["celery"]),
-    "react": ("React", "frontend", ["react"]),
-    "react-dom": ("React", "frontend", ["react-dom"]),
-    "vue": ("Vue", "frontend", ["vue"]),
-    "tailwindcss": ("Tailwind CSS", "css", ["tailwindcss"]),
-    "pytest": ("pytest", "testing", ["pytest"]),
-    "jest": ("Jest", "testing", ["jest"]),
-    "sentry-sdk": ("Sentry", "monitoring", ["sentry-sdk"]),
-    "pyjwt": ("JWT", "auth", ["pyjwt"]),
-    "jwt": ("JWT", "auth", ["jwt"]),
-    "jsonwebtoken": ("JWT", "auth", ["jsonwebtoken"]),
-    "oauthlib": ("OAuth", "auth", ["oauthlib"]),
-    "authlib": ("OAuth", "auth", ["authlib"]),
-    "passport": ("Passport", "auth", ["passport"]),
-}
+TECH_SIGNATURES: dict[str, tuple[str, str, list[str]]] = {}
+DECISION_TEMPLATES: dict[str, tuple[str, str, list[str], str]] = {}
+SELF_FRAMEWORK_REPOS: dict[str, str] = {}
+TEST_DEPENDENCIES: set[str] = set()
+TOOLING_DECISIONS: set[str] = set()
+SUPPORTING_ONLY_DECISIONS: set[str] = set()
 
 
-SELF_FRAMEWORK_REPOS = {
-    "gin": "Gin",
-    "tokio": "Tokio",
-    "actix-web": "Actix",
-    "django": "Django",
-    "fastapi": "FastAPI",
-    "strapi": "Strapi",
-    "next.js": "Next.js",
-    "nest": "NestJS",
-}
-
-
-DECISION_TEMPLATES: dict[str, tuple[str, str, list[str], str]] = {
-    "Go": (
-        "Use Go as the primary backend language",
-        "technology_choice",
-        ["python", "rust", "nodejs", "java"],
-        "Runtime evidence indicates Go is the primary language.",
-    ),
-    "Gin": (
-        "Use Gin as the backend framework",
-        "technology_choice",
-        ["echo", "fiber"],
-        "Runtime evidence indicates this repository exposes HTTP APIs through Gin.",
-    ),
-    "Express": (
-        "Use Express as the backend framework",
-        "technology_choice",
-        ["fastify", "koa"],
-        "Runtime evidence indicates Express is used for HTTP services.",
-    ),
-    "Python": (
-        "Use Python as the primary backend language",
-        "technology_choice",
-        ["go", "rust", "nodejs", "java"],
-        "Runtime evidence indicates Python is the primary language.",
-    ),
-    "JavaScript": (
-        "Use JavaScript as the primary language",
-        "technology_choice",
-        ["typescript"],
-        "Runtime evidence indicates JavaScript is the primary language.",
-    ),
-    "TypeScript": (
-        "Use TypeScript as the primary language",
-        "technology_choice",
-        ["javascript"],
-        "Runtime evidence indicates TypeScript is the primary language.",
-    ),
-    "Rust": (
-        "Use Rust as the primary backend language",
-        "technology_choice",
-        ["go", "c++", "python"],
-        "Runtime evidence indicates Rust is the primary language.",
-    ),
-    "Node.js": (
-        "Use Node.js as the runtime environment",
-        "technology_choice",
-        ["deno", "bun"],
-        "Runtime evidence indicates Node.js is the chosen runtime.",
-    ),
-    "Spring Boot": (
-        "Use Spring Boot for Java APIs",
-        "technology_choice",
-        ["quarkus", "micronaut"],
-        "Runtime evidence indicates Spring Boot is used for APIs.",
-    ),
-    "NestJS": (
-        "Use NestJS for Node.js APIs",
-        "technology_choice",
-        ["express", "fastify"],
-        "Runtime evidence indicates NestJS is the primary API framework.",
-    ),
-    "Nuxt.js": (
-        "Use Nuxt.js for Vue SSR",
-        "technology_choice",
-        ["next.js", "sveltekit"],
-        "Runtime evidence indicates Nuxt.js is used for server-side rendering.",
-    ),
-    "FastAPI": (
-        "Use FastAPI for HTTP APIs",
-        "technology_choice",
-        ["flask", "django"],
-        "Runtime evidence indicates this repository exposes HTTP APIs through FastAPI.",
-    ),
-    "Flask": (
-        "Use Flask as Web Framework",
-        "technology_choice",
-        ["fastapi", "django"],
-        "Runtime evidence indicates this repository uses Flask as its HTTP framework.",
-    ),
-    "Django": (
-        "Use Django as Web Framework",
-        "technology_choice",
-        ["flask", "fastapi"],
-        "Runtime evidence indicates this repository uses Django as its primary web framework.",
-    ),
-    "SQLAlchemy": (
-        "Use SQLAlchemy for relational persistence",
-        "data_access",
-        ["peewee", "pony", "raw_sql"],
-        "Runtime evidence indicates database access is mediated through SQLAlchemy.",
-    ),
-    "PostgreSQL": (
-        "Use PostgreSQL for Persistent Storage",
-        "data_access",
-        ["mysql", "sqlite", "mongodb"],
-        "Runtime evidence indicates PostgreSQL is the selected persistence engine.",
-    ),
-    "Redis": (
-        "Use Redis for Caching",
-        "runtime_policy",
-        ["memcached"],
-        "Runtime evidence indicates Redis is used for cache or shared in-memory state.",
-    ),
-    "Celery": (
-        "Use Celery for asynchronous jobs",
-        "runtime_policy",
-        ["rq", "dramatiq"],
-        "Runtime evidence indicates asynchronous work is delegated through Celery.",
-    ),
-    "Docker": (
-        "Use Docker for Containerized Runtime",
-        "deployment_policy",
-        [],
-        "Container configuration exists for reproducible runtime environments.",
-    ),
-    "Alembic": (
-        "Use Alembic for Database Migrations",
-        "data_access",
-        [],
-        "Migration evidence indicates schema changes are versioned through Alembic.",
-    ),
-    "React": (
-        "Use React for Frontend UI",
-        "technology_choice",
-        ["vue", "angular", "jquery"],
-        "Runtime evidence indicates frontend UI is built with React.",
-    ),
-    "Next.js": (
-        "Use Next.js for Frontend Application",
-        "technology_choice",
-        ["vite", "nuxt"],
-        "Runtime evidence indicates the frontend application is built with Next.js.",
-    ),
-    "JWT": (
-        "Use JWT for API Authentication",
-        "runtime_policy",
-        ["session-based-auth"],
-        "Runtime evidence indicates stateless token authentication is in use.",
-    ),
-}
-
-TEST_DEPENDENCIES = {
-    "pytest",
-    "pytest-cov",
-    "pytest-asyncio",
-    "unittest",
-    "nose",
-    "tox",
-    "nox",
-}
-
-TOOLING_DECISIONS = {"Docker", "GitHub Actions"}
-SUPPORTING_ONLY_DECISIONS = {"PostgreSQL", "Redis", "Alembic"}
-
-
-def build_repository_model(repo_path: str | Path) -> RepositoryModel:
+def build_repository_model(
+    repo_path: str | Path,
+    knowledge_provider: Any = None,
+) -> RepositoryModel:
     repo = Path(repo_path)
+    _get_registry()
     evidence = collect_evidence(repo)
-    technologies = build_technology_candidates(repo, evidence)
+    technologies = build_technology_candidates(repo, evidence, knowledge_provider=knowledge_provider)
     repository_role = infer_repository_role(repo, evidence, technologies)
     technologies = apply_repository_context(repo, repository_role, technologies)
     model = RepositoryModel(
@@ -352,7 +200,7 @@ def build_repository_model(repo_path: str | Path) -> RepositoryModel:
         evidence=evidence,
         technologies=technologies,
     )
-    model.governance_candidates = discover_governance_candidates(model)
+    model.governance_candidates = discover_governance_candidates(model, knowledge_provider=knowledge_provider)
     return model
 
 
@@ -364,13 +212,30 @@ def collect_evidence(repo_path: Path) -> list[Evidence]:
     return evidence
 
 
-def build_technology_candidates(repo_path: Path, evidence: list[Evidence]) -> list[TechnologyCandidate]:
+def build_technology_candidates(
+    repo_path: Path,
+    evidence: list[Evidence],
+    knowledge_provider: Any = None,
+) -> list[TechnologyCandidate]:
     grouped: dict[str, list[Evidence]] = {}
+    known_names: dict[str, str] = {}
+    repo_role = "unknown"
 
     for ev in evidence:
         tech = _technology_for_evidence(ev)
         if tech:
             grouped.setdefault(tech[0], []).append(ev)
+            known_names[ev.value.lower()] = tech[0]
+        elif knowledge_provider and ev.kind == "dependency" and ev.role == EvidenceRole.RUNTIME:
+            result = knowledge_provider.recognize_technology(
+                ev.value,
+                evidence=evidence,
+                repo_role=repo_role,
+                nearby_techs=list(known_names.values()),
+            )
+            if result:
+                grouped.setdefault(result.technology, []).append(ev)
+                known_names[ev.value.lower()] = result.technology
 
     _attach_supporting_evidence(grouped, evidence)
 
@@ -536,17 +401,42 @@ def _has_runtime_dependency_or_usage(evidence: list[Evidence]) -> bool:
     return any(ev.role == EvidenceRole.RUNTIME and ev.kind in {"dependency", "import", "entrypoint"} for ev in evidence)
 
 
-def discover_governance_candidates(model: RepositoryModel) -> list[GovernanceDecisionCandidate]:
+def discover_governance_candidates(
+    model: RepositoryModel,
+    knowledge_provider: Any = None,
+) -> list[GovernanceDecisionCandidate]:
     candidates: list[GovernanceDecisionCandidate] = []
     for tech in model.technologies:
         if tech.suppress_reason:
             continue
         if tech.role not in {"primary", "supporting"}:
             continue
-        if tech.name not in DECISION_TEMPLATES:
-            continue
 
-        title, decision_type, _prohibitions, rationale = DECISION_TEMPLATES[tech.name]
+        _prohibitions: list[str] = []
+        llm_generated = False
+        if tech.name in DECISION_TEMPLATES:
+            title, decision_type, _prohibitions, rationale = DECISION_TEMPLATES[tech.name]
+        elif knowledge_provider:
+            evidence_summary = "; ".join(
+                f"{ev.kind}:{ev.value}" for ev in tech.evidence[:5]
+            )
+            result = knowledge_provider.generate_template(
+                tech_name=tech.name,
+                ecosystem="",
+                category=tech.category,
+                evidence_summary=evidence_summary,
+            )
+            if result:
+                title = f"Use {result.technology}"
+                decision_type = result.decision_type
+                rationale = result.rationale
+                _prohibitions = getattr(result, 'prohibitions', [])
+                llm_generated = result.llm_generated if hasattr(result, 'llm_generated') else True
+            else:
+                continue
+        else:
+            continue
+        technology_name = tech.name
         candidate = GovernanceDecisionCandidate(
             title=title,
             decision_type=decision_type,  # type: ignore[arg-type]
@@ -554,6 +444,9 @@ def discover_governance_candidates(model: RepositoryModel) -> list[GovernanceDec
             evidence_level=tech.evidence_level,
             evidence=tech.evidence,
             rationale=rationale,
+            prohibitions=_prohibitions,
+            llm_generated=llm_generated,
+            technology_name=technology_name,
         )
         suppress_reason = _governance_suppression_reason(model, tech, candidate)
         if suppress_reason:
@@ -864,34 +757,19 @@ def _collect_import_evidence(repo: Path) -> list[Evidence]:
 
 def _collect_file_evidence(repo: Path) -> list[Evidence]:
     evidence: list[Evidence] = []
-    file_rules = {
-        "Dockerfile": ("Docker", EvidenceRole.RUNTIME, EvidenceLevel.STRONG, "Container runtime definition."),
-        "docker-compose.yml": (
-            "Docker",
-            EvidenceRole.RUNTIME,
-            EvidenceLevel.STRONG,
-            "Container composition definition.",
-        ),
-        "docker-compose.yaml": (
-            "Docker",
-            EvidenceRole.RUNTIME,
-            EvidenceLevel.STRONG,
-            "Container composition definition.",
-        ),
-        "manage.py": ("Django", EvidenceRole.RUNTIME, EvidenceLevel.STRONG, "Django management entrypoint."),
-        "alembic.ini": ("Alembic", EvidenceRole.RUNTIME, EvidenceLevel.STRONG, "Alembic migration configuration."),
-        "package.json": ("JavaScript", EvidenceRole.RUNTIME, EvidenceLevel.STRONG, "Node package manifest."),
-        "pyproject.toml": ("Python", EvidenceRole.RUNTIME, EvidenceLevel.STRONG, "Python project manifest."),
-        "requirements.txt": ("Python", EvidenceRole.RUNTIME, EvidenceLevel.MODERATE, "Python dependency manifest."),
-        "favicon.png": (
-            "Strapi",
-            EvidenceRole.UNKNOWN,
-            EvidenceLevel.WEAK,
-            "Generic favicon is weak framework evidence.",
-        ),
-    }
+    reg = _get_registry()
+    file_rules_map: dict[str, tuple[str, EvidenceRole, EvidenceLevel, str]] = {}
+    _role_map_s = {"runtime": EvidenceRole.RUNTIME, "unknown": EvidenceRole.UNKNOWN, "tooling": EvidenceRole.TOOLING}
+    _level_map_s = {"strong": EvidenceLevel.STRONG, "moderate": EvidenceLevel.MODERATE, "weak": EvidenceLevel.WEAK}
+    for rule in reg.file_evidence.values():
+        file_rules_map[rule.file] = (
+            rule.technology,
+            _role_map_s.get(rule.role, EvidenceRole.RUNTIME),
+            _level_map_s.get(rule.level, EvidenceLevel.MODERATE),
+            rule.note,
+        )
     for path in _iter_files(repo):
-        rule = file_rules.get(path.name)
+        rule = file_rules_map.get(path.name)
         if not rule:
             continue
         value, default_role, level, note = rule
@@ -900,91 +778,50 @@ def _collect_file_evidence(repo: Path) -> list[Evidence]:
             role = default_role
         evidence.append(_file_evidence(repo, path, value, role, level, note))
 
+    reg = _get_registry()
+    _role_map_s = {"runtime": EvidenceRole.RUNTIME, "unknown": EvidenceRole.UNKNOWN, "tooling": EvidenceRole.TOOLING}
+    _level_map_s = {"strong": EvidenceLevel.STRONG, "moderate": EvidenceLevel.MODERATE, "weak": EvidenceLevel.WEAK}
     for path in _iter_dirs(repo):
         lowered = path.name.lower()
         rel = _rel(repo, path)
         role = _role_from_path(path, repo)
         if role == EvidenceRole.UNKNOWN:
             role = EvidenceRole.RUNTIME
-        if lowered == "migrations":
-            evidence.append(
-                Evidence(
-                    kind="directory",
-                    value="migrations",
-                    source_path=rel,
-                    role=role,
-                    level=EvidenceLevel.MODERATE,
-                    scope_path=_scope_path(repo, path),
-                    notes=["Migration directory suggests versioned schema changes."],
+        matched = False
+        for dir_rule in reg.dir_evidence:
+            if dir_rule.path:
+                if path.parts[-len(dir_rule.path.split("/")):] == tuple(dir_rule.path.split("/")) or rel == dir_rule.path:
+                    matched = True
+            elif dir_rule.directory and lowered == dir_rule.directory.lower():
+                matched = True
+            if matched:
+                dr_role = _role_map_s.get(dir_rule.role, role)
+                evidence.append(
+                    Evidence(
+                        kind="directory",
+                        value=dir_rule.value,
+                        source_path=rel,
+                        role=dr_role,
+                        level=_level_map_s.get(dir_rule.level, EvidenceLevel.MODERATE),
+                        scope_path=_scope_path(repo, path),
+                        notes=[dir_rule.note],
+                    )
                 )
-            )
-        elif lowered == "alembic":
-            evidence.append(
-                Evidence(
-                    kind="directory",
-                    value="alembic",
-                    source_path=rel,
-                    role=role,
-                    level=EvidenceLevel.STRONG,
-                    scope_path=_scope_path(repo, path),
-                    notes=["Alembic migration environment detected."],
-                )
-            )
-        elif lowered == "routers":
-            evidence.append(
-                Evidence(
-                    kind="directory",
-                    value="fastapi_routers",
-                    source_path=rel,
-                    role=role,
-                    level=EvidenceLevel.STRONG,
-                    scope_path=_scope_path(repo, path),
-                    notes=["Router directory indicates HTTP API route organization."],
-                )
-            )
-        elif lowered == "db":
-            evidence.append(
-                Evidence(
-                    kind="directory",
-                    value="relational_persistence",
-                    source_path=rel,
-                    role=role,
-                    level=EvidenceLevel.MODERATE,
-                    scope_path=_scope_path(repo, path),
-                    notes=["Database module directory indicates relational persistence boundary."],
-                )
-            )
-        elif path.parts[-2:] == (".github", "workflows") or rel == ".github/workflows":
-            evidence.append(
-                Evidence(
-                    kind="directory",
-                    value="github_actions",
-                    source_path=rel,
-                    role=EvidenceRole.TOOLING,
-                    level=EvidenceLevel.MODERATE,
-                    scope_path=_scope_path(repo, path),
-                    notes=["GitHub Actions workflow directory detected."],
-                )
-            )
+                break
 
-    lang_globs = {
-        "*.go": "Go",
-        "*.js": "JavaScript",
-        "*.ts": "TypeScript",
-        "*.rs": "Rust",
-    }
-    for glob, lang in lang_globs.items():
-        for path in repo.rglob(glob):
+    reg = _get_registry()
+    for lang_rule in reg.language_evidence:
+        for path in repo.rglob(lang_rule.glob):
             if path.is_file() and _is_allowed_path(repo, path):
                 evidence.append(
                     Evidence(
                         kind="language",
-                        value=lang,
-                        source_path=glob,
+                        value=lang_rule.technology,
+                        source_path=lang_rule.glob,
                         role=EvidenceRole.RUNTIME,
                         level=EvidenceLevel.STRONG,
                         scope_path=None,
-                        notes=[f"{lang} source files detected."],
+                        notes=[f"{lang_rule.technology} source files detected."],
                     )
                 )
                 break
@@ -993,26 +830,13 @@ def _collect_file_evidence(repo: Path) -> list[Evidence]:
 
 
 def _technology_for_evidence(ev: Evidence) -> tuple[str, str] | None:
+    reg = _get_registry()
     value = ev.value.lower()
     if ev.kind in {"file", "directory", "language"}:
-        file_map = {
-            "Docker": ("Docker", "container"),
-            "Django": ("Django", "framework"),
-            "Alembic": ("Alembic", "migration"),
-            "Python": ("Python", "language"),
-            "JavaScript": ("JavaScript", "language"),
-            "TypeScript": ("TypeScript", "language"),
-            "Go": ("Go", "language"),
-            "Rust": ("Rust", "language"),
-            "Strapi": ("Strapi", "framework"),
-            "migrations": ("Alembic", "migration"),
-            "alembic": ("Alembic", "migration"),
-            "fastapi_app": ("FastAPI", "framework"),
-            "github_actions": ("GitHub Actions", "ci"),
-            "go.mod": ("Go", "language"),
-            "Cargo.toml": ("Rust", "language"),
-        }
-        return file_map.get(ev.value)
+        resolved = reg.evidence_resolution.get(ev.value)
+        if resolved:
+            return resolved
+        return None
 
     for dep_name, sig in TECH_SIGNATURES.items():
         name, category, aliases = sig
@@ -1022,19 +846,8 @@ def _technology_for_evidence(ev: Evidence) -> tuple[str, str] | None:
 
 
 def _category_for_name(name: str) -> str:
-    for sig_name, category, _aliases in TECH_SIGNATURES.values():
-        if sig_name == name:
-            return category
-    fixed = {
-        "Docker": "container",
-        "Python": "language",
-        "JavaScript": "language",
-        "Go": "language",
-        "Rust": "language",
-        "Alembic": "migration",
-        "GitHub Actions": "ci",
-    }
-    return fixed.get(name, "tooling")
+    from decisiondrift.bootstrap.registry import category_for_tech
+    return category_for_tech(_get_registry(), name)
 
 
 def _aggregate_evidence_level(evidence: list[Evidence]) -> EvidenceLevel:
@@ -1113,6 +926,8 @@ def _template_for_candidate(
     for name, (title, decision_type, prohibitions, rationale) in DECISION_TEMPLATES.items():
         if candidate.title == title:
             return name, title, decision_type, prohibitions, rationale
+    if candidate.llm_generated and candidate.prohibitions:
+        return "LLM", candidate.title, candidate.decision_type, candidate.prohibitions, candidate.rationale
     return None
 
 
@@ -1124,6 +939,8 @@ def _technology_for_governance_candidate(
     if not template:
         return None
     name = template[0]
+    if name == "LLM" and candidate.technology_name:
+        name = candidate.technology_name
     for tech in model.technologies:
         if tech.name == name:
             return tech

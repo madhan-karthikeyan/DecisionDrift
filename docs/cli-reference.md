@@ -11,7 +11,8 @@
 
 ### `decisiondrift bootstrap <path>`
 
-Generate candidate ADRs from repository structure.
+Generate candidate ADRs from repository structure. Deterministic by default;
+with `--llm`, recognizes unknown technologies and generates ADR templates via LLM.
 
 | Flag | Default | Description |
 |------|---------|-------------|
@@ -20,6 +21,14 @@ Generate candidate ADRs from repository structure.
 | `--min-confidence` | `low` | Minimum confidence level (`low`, `medium`, `high`) |
 | `--max-candidates` | — | Maximum number of candidate ADRs to generate |
 | `--adr-dir` | `docs/adr` | ADR output directory |
+| `--llm` | `false` | Enable LLM technology recognition for unknown dependencies |
+| `--llm-api-key` | `env/DECISIONDRIFT_LLM_API_KEY` | LLM API key |
+| `--llm-model` | `gpt-4o` | LLM model name |
+| `--llm-base-url` | — | Custom API base URL (for Ollama, Groq, etc.) |
+| `--min-llm-confidence` | `0.6` | Minimum confidence threshold for LLM results (0.0–1.0) |
+| `--cache-templates` | `false` | Cache LLM-generated ADR templates (opt-in, tech recognition always cached) |
+
+**Layered knowledge precedence:** Project cache (`.decisiondrift/cache.yaml`) > Global cache (`~/.config/decisiondrift/cache.yaml`) > Bundled registry (`default_registry.yaml`) > LLM fallback
 
 **Exit codes:** `0` on success, `1` on error.
 

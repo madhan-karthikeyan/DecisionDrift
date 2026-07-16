@@ -46,14 +46,33 @@ graph TD
 
 ```mermaid
 graph TD
-    RT[Repository Tree] --> SS
-    
-    subgraph Engine
-        SS[structure_scan<br>walk dir tree, skip noise<br>collect: dirs, files, indicators] --> |ProjectStructure| D
-        D[detectors<br>detect technologies from deps/files/imports] --> |TechnologyCandidate| P
-        P[patterns<br>match known architecture patterns] --> |PatternMatch| V[v3.py governance logic<br>suppress non-decision patterns<br>assign confidence levels]
-        V --> |ADRSuggestion| T[template_gen<br>render ADR markdown files]
+    RT[Repository Tree] --> CE[collect_evidence<br>deps, imports, files, dirs]
+
+    subgraph Registry Layer
+        R[TechnologyRegistry<br>default_registry.yaml<br>schema: 1] --> LK[Layered Lookup]
+        GC[Global Cache<br>~/.config/decisiondrift/cache.yaml] --> LK
+        PC[Project Cache<br>.decisiondrift/cache.yaml] --> LK
     end
+
+    CE --> |Evidence[]| BT[build_technology_candidates]
+    LK --> BT
+    BT --> |TechnologyCandidate| IT[infer_repository_role]
+    IT --> RC[apply_repository_context]
+    RC --> DC[discover_governance_candidates]
+    LK --> DC
+
+    subgraph LLM Path (optional --llm)
+        KP[KnowledgeProvider]
+        KP --> |LLMClient| LLM[GPT / Ollama / Groq]
+        LLM --> |JSON validation + retry| RS[RecognitionResult]
+        RS --> |composite confidence| KP
+        KP --> BT
+        KP --> DC
+    end
+
+    DC --> |GovernanceDecisionCandidate| AE[analyze_enforceability]
+    AE --> |EnforceabilityAnalysis| GS[generate_v3_suggestions]
+    GS --> |ADRSuggestion| TG[template_gen<br>render ADR markdown]
 ```
 
 ## Rule Engine
