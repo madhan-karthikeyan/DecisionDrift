@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import datetime
 from enum import StrEnum
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel
+
+from decisiondrift import __version__
 
 
 class ConfidenceLevel(StrEnum):
@@ -84,6 +87,26 @@ ENFORCEMENT_ACTIONS = {
     "not_applicable": "allow",
     "needs_human_review": "warn",
 }
+
+
+class ReportEnvelope(BaseModel):
+    """Unified output envelope for all CLI commands.
+
+    Every command (enforce, audit, bootstrap, init) emits this same top-level
+    structure when --format json or --format sarif is used.
+    """
+    schema_version: int = 1
+    command: str
+    tool_version: str = __version__
+    timestamp: str = ""
+    duration_ms: int = 0
+    summary: dict[str, Any] = {}
+    findings: list[dict[str, Any]] = []
+    metadata: dict[str, Any] = {}
+
+    def model_post_init(self, __context: Any) -> None:
+        if not self.timestamp:
+            self.timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
 
 ADR_SCHEMA = {

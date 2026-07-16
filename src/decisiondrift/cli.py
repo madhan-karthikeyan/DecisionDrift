@@ -307,7 +307,9 @@ def impact(diff_file: str | None, repo: str, from_git: bool):
     type=click.Choice(["block", "require_approval", "warn", "info"]),
     help="Minimum action level that causes non-zero exit",
 )
-def enforce(diff_file: str | None, repo: str, adr_dir: str | None, from_git: bool, staged: bool, fail_on: str):
+@click.option("--format", "output_format", default="text", show_default=True, type=click.Choice(["text", "json", "sarif", "markdown"]), help="Output format")
+@click.option("--output", "output_file", type=str, default=None, help="Write output to file instead of stdout")
+def enforce(diff_file: str | None, repo: str, adr_dir: str | None, from_git: bool, staged: bool, fail_on: str, output_format: str, output_file: str | None):
     """Enforce ADR rules against a diff or full repo.
 
     Deterministic rule engine: checks dependencies, imports, paths, APIs, and configs.
@@ -315,6 +317,8 @@ def enforce(diff_file: str | None, repo: str, adr_dir: str | None, from_git: boo
     """
     from decisiondrift.adr.loader import load_adrs
     from decisiondrift.adr.supersession import resolve_active
+    from decisiondrift.models.schema import ReportEnvelope
+    from decisiondrift.report.formatter import format_output
     from decisiondrift.rules.engine import enforce_from_adrs
 
     resolved_adr_dir = Path(adr_dir) if adr_dir else Path(repo) / "docs" / "adr"
@@ -326,46 +330,57 @@ def enforce(diff_file: str | None, repo: str, adr_dir: str | None, from_git: boo
         decisions = load_adrs(str(resolved_adr_dir), status_filter={"accepted"})
         active = resolve_active(decisions)
         if not active:
-            click.echo("No accepted ADRs found. No rules to enforce.")
-            click.echo("")
-            click.echo("  Approve proposed ADRs with:")
-            click.echo("    decisiondrift adr approve <adr-id>")
-            click.echo("")
-            click.echo("  Or generate new candidate ADRs with:")
-            click.echo("    decisiondrift bootstrap <repo-path> --apply")
+            env = ReportEnvelope(
+                command="enforce",
+                summary={
+                    "status": "no_active_adrs",
+                    "message": "No accepted ADRs found. Approve proposed ADRs with:\n  decisiondrift adr approve <adr-id>\n\nOr generate new candidate ADRs with:\n  decisiondrift bootstrap <repo-path> --apply",
+                },
+            )
+            _emit_output(format_output(env, output_format), output_file)
             return
 
         result = enforce_from_adrs(active, repo_path=repo, diff_text=diff_text)
-
-        if not result.findings:
-            click.echo("No violations found.")
-            return
 
         severity_order = {"block": 0, "require_approval": 1, "warn": 2, "info": 3}
         fail_level = severity_order.get(fail_on, 0)
         exit_code = 0
 
-        click.echo("")
+        findings = []
         for f in result.findings:
-            action_label = f.action.value.upper()
-            click.echo(f"  [{action_label}] {f.adr_id} ({f.rule_type.value})")
-            click.echo(f"           Match: {f.match_value}")
-            if f.file_path:
-                click.echo(f"           File: {f.file_path}")
-            if f.description:
-                click.echo(f"           {f.description}")
-            click.echo("")
-
+            findings.append({
+                "adr_id": f.adr_id,
+                "adr_title": f.adr_title,
+                "rule_id": f.rule_id,
+                "rule_type": f.rule_type.value,
+                "action": f.action.value,
+                "severity": f.severity,
+                "match_value": f.match_value,
+                "file_path": f.file_path,
+                "description": f.description,
+            })
             action_level = severity_order.get(f.action.value, 99)
             if action_level <= fail_level:
                 exit_code = 1
 
-        click.echo("---")
-        click.echo(
-            f"{len(result.findings)} finding(s), "
-            f"{result.rules_evaluated} rule(s) evaluated, "
-            f"{result.files_scanned} file(s) scanned."
+        env = ReportEnvelope(
+            command="enforce",
+            summary={
+                "status": "violations" if findings else "clean",
+                "findings_count": len(findings),
+                "rules_evaluated": result.rules_evaluated,
+                "files_scanned": result.files_scanned,
+                "exit_code": exit_code,
+            },
+            findings=findings,
+            metadata={
+                "repo": repo,
+                "adr_dir": str(resolved_adr_dir),
+                "diff_mode": diff_text is not None,
+                "fail_on": fail_on,
+            },
         )
+        _emit_output(format_output(env, output_format), output_file)
         sys.exit(exit_code)
 
     except Exception as e:
@@ -374,6 +389,13 @@ def enforce(diff_file: str | None, repo: str, adr_dir: str | None, from_git: boo
 
         traceback.print_exc()
         sys.exit(1)
+
+
+def _emit_output(text: str, output_file: str | None = None) -> None:
+    if output_file:
+        Path(output_file).write_text(text)
+    else:
+        click.echo(text)
 
 
 @cli.command()
