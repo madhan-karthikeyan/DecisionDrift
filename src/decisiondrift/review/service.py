@@ -12,6 +12,7 @@ from decisiondrift.impact.reference_scan import generate_search_terms
 from decisiondrift.impact.service import analyze_diff
 from decisiondrift.models.schema import ImpactedSymbol, ReviewResult
 from decisiondrift.retrieval.keyword import KeywordBackend
+from decisiondrift.retrieval.embedding import HAS_FASTEMBED, EmbeddingBackend
 
 
 def _extract_hunks(diff_text: str) -> dict[str, str]:
@@ -96,8 +97,10 @@ def run_review(
     threshold = config.get("similarity_threshold", 0.5)
     top_k = config.get("top_k", 5)
     max_pairs = config.get("max_pairs_per_pr", 15)
+    embedding_model = config.get("embedding_model", "BAAI/bge-small-en-v1.5")
 
-    backend = KeywordBackend()
+    keyword_backend = KeywordBackend()
+    embedding_backend = EmbeddingBackend(model_name=embedding_model) if HAS_FASTEMBED else None
     inputs: list[ClassificationInput] = []
     pairs_used = 0
 
@@ -105,9 +108,14 @@ def run_review(
         if pairs_used >= max_pairs:
             break
         terms = generate_search_terms([symbol])
-        results = backend.query(terms, active, top_k=top_k)
+        results = keyword_backend.query(terms, active, top_k=top_k)
+        above_threshold = [r for r in results if r.score >= threshold]
 
-        for r in results:
+        if not above_threshold and embedding_backend:
+            results = embedding_backend.query(terms, active, top_k=top_k)
+            above_threshold = [r for r in results if r.score >= threshold]
+
+        for r in above_threshold:
             if pairs_used >= max_pairs:
                 break
             if r.score < threshold:
