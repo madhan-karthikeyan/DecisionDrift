@@ -378,6 +378,187 @@ technologies:
       entrypoints: []
     confidence: 0.95
 
+  - name: Ruby
+    ecosystem: ""
+    category: language
+    aliases: []
+    detection:
+      dependencies: []
+      imports: []
+      files: [Gemfile, Gemfile.lock]
+      directories: []
+      entrypoints: []
+    confidence: 0.95
+
+  - name: PHP
+    ecosystem: ""
+    category: language
+    aliases: []
+    detection:
+      dependencies: []
+      imports: []
+      files: [composer.json]
+      directories: []
+      entrypoints: []
+    confidence: 0.95
+
+  - name: C#
+    ecosystem: ""
+    category: language
+    aliases: [csharp, c-sharp]
+    detection:
+      dependencies: []
+      imports: []
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.95
+
+  - name: Swift
+    ecosystem: ""
+    category: language
+    aliases: []
+    detection:
+      dependencies: []
+      imports: []
+      files: [Package.swift]
+      directories: []
+      entrypoints: []
+    confidence: 0.95
+
+  - name: Kotlin
+    ecosystem: ""
+    category: language
+    aliases: []
+    detection:
+      dependencies: []
+      imports: []
+      files: [build.gradle.kts]
+      directories: []
+      entrypoints: []
+    confidence: 0.95
+
+  # --- New framework & testing entries ---
+  - name: Rails
+    ecosystem: Ruby
+    category: framework
+    aliases: [rails, rubyonrails]
+    detection:
+      dependencies: [rails]
+      imports: [rails]
+      files: []
+      directories: [app, config, db/migrate]
+      entrypoints: []
+    confidence: 0.95
+
+  - name: RSpec
+    ecosystem: Ruby
+    category: testing
+    aliases: [rspec]
+    detection:
+      dependencies: [rspec, rspec-rails, rspec-core]
+      imports: [rspec]
+      files: [.rspec, spec_helper.rb]
+      directories: [spec]
+      entrypoints: []
+    confidence: 0.95
+
+  - name: Laravel
+    ecosystem: PHP
+    category: framework
+    aliases: [laravel]
+    detection:
+      dependencies: ["laravel/framework"]
+      imports: ["Illuminate"]
+      files: [artisan]
+      directories: [app/Http, routes]
+      entrypoints: []
+    confidence: 0.95
+
+  - name: PHPUnit
+    ecosystem: PHP
+    category: testing
+    aliases: [phpunit]
+    detection:
+      dependencies: ["phpunit/phpunit"]
+      imports: ["PHPUnit"]
+      files: [phpunit.xml]
+      directories: [tests]
+      entrypoints: []
+    confidence: 0.95
+
+  - name: ASP.NET Core
+    ecosystem: C#
+    category: framework
+    aliases: ["asp.net core", "aspnetcore"]
+    detection:
+      dependencies: ["Microsoft.AspNetCore"]
+      imports: ["Microsoft.AspNetCore"]
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.90
+
+  - name: xUnit
+    ecosystem: C#
+    category: testing
+    aliases: [xunit]
+    detection:
+      dependencies: [xunit]
+      imports: [Xunit]
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.90
+
+  - name: Vapor
+    ecosystem: Swift
+    category: framework
+    aliases: [vapor]
+    detection:
+      dependencies: [vapor]
+      imports: [Vapor]
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.90
+
+  - name: XCTest
+    ecosystem: Swift
+    category: testing
+    aliases: [xctest]
+    detection:
+      dependencies: []
+      imports: [XCTest]
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.85
+
+  - name: Ktor
+    ecosystem: Kotlin
+    category: framework
+    aliases: [ktor]
+    detection:
+      dependencies: ["io.ktor:ktor-server-core"]
+      imports: ["io.ktor"]
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.90
+
+  - name: Kotest
+    ecosystem: Kotlin
+    category: testing
+    aliases: [kotest]
+    detection:
+      dependencies: ["io.kotest:kotest-runner-junit5"]
+      imports: ["io.kotest"]
+      files: []
+      directories: []
+      entrypoints: []
+    confidence: 0.90
+
   # --- Container/CI technologies ---
   - name: Docker
     ecosystem: ""
@@ -544,6 +725,42 @@ governance_templates:
     prohibitions: [session-based-auth]
     rationale: "Runtime evidence indicates stateless token authentication is in use."
 
+  - technology: Rails
+    decision_type: technology_choice
+    title: "Use Rails for Ruby backends"
+    prohibitions: [sinatra, hanami]
+    rationale: "Runtime evidence indicates Ruby on Rails is the backend framework."
+
+  - technology: RSpec
+    decision_type: testing_policy
+    title: "Use RSpec for Ruby testing"
+    prohibitions: [minitest, test-unit]
+    rationale: "Runtime evidence indicates RSpec is the testing framework."
+
+  - technology: Laravel
+    decision_type: technology_choice
+    title: "Use Laravel for PHP backends"
+    prohibitions: [symfony, cakePHP, codeigniter]
+    rationale: "Runtime evidence indicates Laravel is the PHP backend framework."
+
+  - technology: "ASP.NET Core"
+    decision_type: technology_choice
+    title: "Use ASP.NET Core for C# APIs"
+    prohibitions: ["asp.net mvc", "windows communication foundation"]
+    rationale: "Runtime evidence indicates ASP.NET Core is the web framework."
+
+  - technology: Vapor
+    decision_type: technology_choice
+    title: "Use Vapor for Swift server-side apps"
+    prohibitions: [perfect, kitura]
+    rationale: "Runtime evidence indicates Vapor is the Swift server framework."
+
+  - technology: Ktor
+    decision_type: technology_choice
+    title: "Use Ktor for Kotlin APIs"
+    prohibitions: [spring-boot, jooby]
+    rationale: "Runtime evidence indicates Ktor is the Kotlin web framework."
+
 # --- Self-framework repos (repo name implies framework) ---
 self_framework_repos:
   gin: Gin
@@ -554,6 +771,10 @@ self_framework_repos:
   strapi: Strapi
   "next.js": Next.js
   nest: NestJS
+  rails: Rails
+  laravel: Laravel
+  vapor: Vapor
+  ktor: Ktor
 
 # --- Test dependencies (force TEST role) ---
 test_dependencies:
@@ -568,6 +789,13 @@ test_dependencies:
   - mocha
   - jasmine
   - vitest
+  - rspec
+  - rspec-rails
+  - phpunit
+  - xunit
+  - nunit
+  - kotest
+  - xctest
 
 # --- File evidence rules ---
 # Maps file names to technology evidence.
@@ -617,6 +845,46 @@ file_evidence:
     role: unknown
     level: weak
     note: "Generic favicon is weak framework evidence."
+  - file: Gemfile
+    technology: Ruby
+    role: runtime
+    level: strong
+    note: "Ruby dependency manifest."
+  - file: Gemfile.lock
+    technology: Ruby
+    role: runtime
+    level: strong
+    note: "Ruby locked dependency manifest."
+  - file: composer.json
+    technology: PHP
+    role: runtime
+    level: strong
+    note: "PHP dependency manifest."
+  - file: Package.swift
+    technology: Swift
+    role: runtime
+    level: strong
+    note: "Swift package manifest."
+  - file: build.gradle.kts
+    technology: Kotlin
+    role: runtime
+    level: strong
+    note: "Kotlin Gradle build script."
+  - file: artisan
+    technology: Laravel
+    role: runtime
+    level: strong
+    note: "Laravel CLI entrypoint."
+  - file: .rspec
+    technology: RSpec
+    role: tooling
+    level: strong
+    note: "RSpec configuration file."
+  - file: phpunit.xml
+    technology: PHPUnit
+    role: tooling
+    level: strong
+    note: "PHPUnit configuration file."
 
 # --- Directory evidence rules ---
 dir_evidence:
@@ -667,6 +935,16 @@ language_evidence:
     technology: TypeScript
   - glob: "*.rs"
     technology: Rust
+  - glob: "*.rb"
+    technology: Ruby
+  - glob: "*.php"
+    technology: PHP
+  - glob: "*.cs"
+    technology: C#
+  - glob: "*.swift"
+    technology: Swift
+  - glob: "*.kt"
+    technology: Kotlin
 
 # --- Evidence resolution (maps evidence values to tech names) ---
 # Used when evidence.kind is "file", "directory", or "language"
@@ -686,6 +964,15 @@ evidence_resolution:
   github_actions: [GitHub Actions, ci]
   go.mod: [Go, language]
   Cargo.toml: [Rust, language]
+  Gemfile: [Ruby, language]
+  composer.json: [PHP, language]
+  Package.swift: [Swift, language]
+  build.gradle.kts: [Kotlin, language]
+  Rails: [Rails, framework]
+  Laravel: [Laravel, framework]
+  "ASP.NET Core": [ASP.NET Core, framework]
+  Vapor: [Vapor, framework]
+  Ktor: [Ktor, framework]
 
 # --- Technology classification overrides ---
 # Maps technology names to categories when not resolvable from signatures
@@ -697,6 +984,11 @@ category_overrides:
   Rust: language
   Alembic: migration
   "GitHub Actions": ci
+  Ruby: language
+  PHP: language
+  "C#": language
+  Swift: language
+  Kotlin: language
 
 # --- Enforceability rules ---
 # Technologies that are tooling (not strong governance candidates)
