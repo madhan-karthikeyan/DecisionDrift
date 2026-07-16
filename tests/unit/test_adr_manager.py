@@ -240,3 +240,63 @@ class TestGuardCommands:
     def test_list_nonexistent_directory(self, tmp_path: Path):
         records = list_adrs(str(tmp_path / "nonexistent"))
         assert records == []
+
+
+class TestADRDeprecation:
+    def test_deprecate_adr(self, adr_dir_with_records: Path):
+        from decisiondrift.adr_manager.commands import deprecate_adr
+        from decisiondrift.adr.parser import parse_adr_file
+
+        deprecate_adr(str(adr_dir_with_records), "ADR-0001", reason="No longer relevant")
+        record = parse_adr_file(adr_dir_with_records / "ADR-0001.md")
+        assert record is not None
+        assert record.status == "deprecated"
+        assert record.rejected_reason == "No longer relevant"
+
+    def test_deprecate_nonexistent_adr(self, adr_dir_with_records: Path):
+        from decisiondrift.adr_manager.commands import deprecate_adr
+
+        deprecate_adr(str(adr_dir_with_records), "ADR-9999")
+
+    def test_deprecate_already_rejected_adr_fails(self, adr_dir_with_records: Path):
+        from decisiondrift.adr_manager.commands import deprecate_adr
+        from decisiondrift.adr.parser import parse_adr_file
+
+        deprecate_adr(str(adr_dir_with_records), "ADR-0003")
+        record = parse_adr_file(adr_dir_with_records / "ADR-0003.md")
+        assert record is not None
+        assert record.status != "deprecated"
+
+    def test_archive_aliases_deprecate(self, adr_dir_with_records: Path):
+        from decisiondrift.adr_manager.commands import deprecate_adr
+        from decisiondrift.adr.parser import parse_adr_file
+
+        deprecate_adr(str(adr_dir_with_records), "ADR-0001", reason="Archived")
+        record = parse_adr_file(adr_dir_with_records / "ADR-0001.md")
+        assert record is not None
+        assert record.status == "deprecated"
+
+
+class TestADRSupercession:
+    def test_supersede_creates_new_adr(self, adr_dir_with_records: Path):
+        from decisiondrift.adr_manager.commands import supersede_adr
+        from decisiondrift.adr.parser import parse_adr_file
+
+        new_id = supersede_adr(str(adr_dir_with_records), "ADR-0001", "Use Fastify Instead")
+        assert new_id is not None
+        assert (adr_dir_with_records / f"{new_id}.md").exists()
+
+        original = parse_adr_file(adr_dir_with_records / "ADR-0001.md")
+        assert original is not None
+        assert original.status == "superseded"
+        assert original.superseded_by == new_id
+
+        new_record = parse_adr_file(adr_dir_with_records / f"{new_id}.md")
+        assert new_record is not None
+        assert new_record.status == "proposed"
+
+    def test_supersede_nonexistent_adr(self, adr_dir_with_records: Path):
+        from decisiondrift.adr_manager.commands import supersede_adr
+
+        new_id = supersede_adr(str(adr_dir_with_records), "ADR-9999", "New Title")
+        assert new_id is None

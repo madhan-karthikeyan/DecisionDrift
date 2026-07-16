@@ -8,7 +8,16 @@ from pathlib import Path
 import click
 
 from decisiondrift import __version__
-from decisiondrift.adr_manager.commands import approve_adr, list_adrs, reject_adr, show_adr
+from decisiondrift.adr_manager.commands import (
+    approve_adr,
+    deprecate_adr,
+    edit_adr,
+    history_adr,
+    list_adrs,
+    reject_adr,
+    show_adr,
+    supersede_adr,
+)
 
 
 @click.group()
@@ -57,6 +66,53 @@ def adr_approve(adr_id: str, adr_dir: str):
 def adr_reject(adr_id: str, reason: str | None, adr_dir: str):
     """Reject a proposed ADR (status → rejected)."""
     reject_adr(adr_dir, adr_id, reason=reason)
+
+
+@adr.command("deprecate")
+@click.argument("adr_id")
+@click.option("--reason", type=str, help="Reason for deprecation")
+@click.option("--adr-dir", default="docs/adr", show_default=True, help="Path to ADR directory")
+def adr_deprecate(adr_id: str, reason: str | None, adr_dir: str):
+    """Deprecate an ADR (status → deprecated)."""
+    deprecate_adr(adr_dir, adr_id, reason=reason)
+
+
+@adr.command("archive")
+@click.argument("adr_id")
+@click.option("--reason", type=str, help="Reason for archiving")
+@click.option("--adr-dir", default="docs/adr", show_default=True, help="Path to ADR directory")
+def adr_archive(adr_id: str, reason: str | None, adr_dir: str):
+    """Archive an ADR (alias for deprecate, status → deprecated)."""
+    deprecate_adr(adr_dir, adr_id, reason=reason)
+
+
+@adr.command("supersede")
+@click.argument("adr_id")
+@click.argument("title")
+@click.option("--body", type=str, help="Body text for the new superseding ADR")
+@click.option("--adr-dir", default="docs/adr", show_default=True, help="Path to ADR directory")
+def adr_supersede(adr_id: str, title: str, body: str | None, adr_dir: str):
+    """Supersede an ADR with a new one (old → superseded, creates new ADR)."""
+    new_id = supersede_adr(adr_dir, adr_id, title, body=body)
+    if new_id is None:
+        sys.exit(1)
+    click.echo(f"Created {new_id}.md — run `decisiondrift adr show {new_id}` to view.")
+
+
+@adr.command("edit")
+@click.argument("adr_id")
+@click.option("--adr-dir", default="docs/adr", show_default=True, help="Path to ADR directory")
+def adr_edit(adr_id: str, adr_dir: str):
+    """Open an ADR in $EDITOR for editing."""
+    edit_adr(adr_dir, adr_id)
+
+
+@adr.command("history")
+@click.argument("adr_id")
+@click.option("--adr-dir", default="docs/adr", show_default=True, help="Path to ADR directory")
+def adr_history(adr_id: str, adr_dir: str):
+    """Show git history for an ADR file."""
+    history_adr(adr_dir, adr_id)
 
 
 @adr.command("show")
