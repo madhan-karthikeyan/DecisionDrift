@@ -21,8 +21,10 @@ from decisiondrift.rules.scanner import (
     match_import_rules,
 )
 from decisiondrift.utils.dependency_parser import (
+    parse_build_gradle_kts,
     parse_cargo_toml,
     parse_composer_json,
+    parse_csproj,
     parse_gemfile,
     parse_gemfile_lock,
     parse_go_mod,
@@ -265,6 +267,10 @@ def _extract_deps_from_file(path: Path) -> list[str]:
         return [dep for dep, _role in parse_gemfile_lock(path)]
     if name == "composer.json":
         return [dep for dep, _role in parse_composer_json(path)]
+    if name == "build.gradle.kts":
+        return [dep for dep, _role in parse_build_gradle_kts(path)]
+    if name.endswith(".csproj"):
+        return [dep for dep, _role in parse_csproj(path)]
     return []
 
 

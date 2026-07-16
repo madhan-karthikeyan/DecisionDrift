@@ -11,8 +11,10 @@ from decisiondrift.impact.language_registry import (
 )
 from decisiondrift.rules.models import Rule, RuleMatch, RuleType
 from decisiondrift.utils.dependency_parser import (
+    parse_build_gradle_kts,
     parse_cargo_toml,
     parse_composer_json,
+    parse_csproj,
     parse_gemfile,
     parse_gemfile_lock,
     parse_go_mod,
@@ -54,10 +56,15 @@ def scan_dependencies(repo_path: str | Path) -> list[str]:
         "Gemfile": parse_gemfile,
         "Gemfile.lock": parse_gemfile_lock,
         "composer.json": parse_composer_json,
+        "build.gradle.kts": parse_build_gradle_kts,
     }
 
+    dep_suffix_patterns: list[tuple[str, Any]] = [
+        (".csproj", parse_csproj),
+    ]
+
     for dep_file in repo.rglob("*"):
-        if not dep_file.is_file() or dep_file.name not in dep_file_patterns:
+        if not dep_file.is_file():
             continue
         if _is_excluded(dep_file, repo):
             continue
@@ -65,7 +72,15 @@ def scan_dependencies(repo_path: str | Path) -> list[str]:
             continue
         seen_files.add(dep_file)
 
-        parser = dep_file_patterns[dep_file.name]
+        parser = dep_file_patterns.get(dep_file.name)
+        if parser is None:
+            for suffix, sfx_parser in dep_suffix_patterns:
+                if dep_file.name.endswith(suffix):
+                    parser = sfx_parser
+                    break
+        if parser is None:
+            continue
+
         try:
             parsed = parser(dep_file)
         except Exception:
@@ -105,7 +120,11 @@ def match_dependency_rules(
 
 def _find_dep_file_containing(repo: Path, match: str) -> str | None:
     """Find a dependency file that contains the given match string."""
-    dep_file_names = {"requirements.txt", "pyproject.toml", "package.json", "go.mod", "Cargo.toml", "Gemfile", "Gemfile.lock", "composer.json"}
+    dep_file_names = {
+        "requirements.txt", "pyproject.toml", "package.json", "go.mod",
+        "Cargo.toml", "Gemfile", "Gemfile.lock", "composer.json",
+        "build.gradle.kts",
+    }
     for dep_file in repo.rglob("*"):
         if not dep_file.is_file() or dep_file.name not in dep_file_names:
             continue

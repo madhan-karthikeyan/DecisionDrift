@@ -220,5 +220,54 @@ def parse_composer_json(path: Path) -> list[tuple[str, str]]:
     return deps
 
 
+def parse_csproj(path: Path) -> list[tuple[str, str]]:
+    deps: list[tuple[str, str]] = []
+    if not path.exists():
+        return deps
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return deps
+    seen: set[str] = set()
+    for m in re.finditer(r'PackageReference\s+Include="([^"]+)"', text):
+        pkg = m.group(1)
+        if pkg and pkg not in seen:
+            seen.add(pkg)
+            deps.append((pkg, "runtime"))
+    return deps
+
+
+def parse_build_gradle_kts(path: Path) -> list[tuple[str, str]]:
+    deps: list[tuple[str, str]] = []
+    if not path.exists():
+        return deps
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return deps
+    seen: set[str] = set()
+    config_role = {
+        "implementation": "runtime",
+        "api": "runtime",
+        "compileOnly": "runtime",
+        "runtimeOnly": "runtime",
+        "testImplementation": "dev",
+        "testRuntimeOnly": "dev",
+        "androidTestImplementation": "dev",
+        "kapt": "tooling",
+        "ksp": "tooling",
+    }
+    for config, role in config_role.items():
+        for m in re.finditer(
+            rf'{re.escape(config)}\s*\(\s*"([^"]+)"',
+            text,
+        ):
+            pkg = m.group(1).strip()
+            if pkg and pkg not in seen:
+                seen.add(pkg)
+                deps.append((pkg, role))
+    return deps
+
+
 def _dep_name(value: str) -> str:
     return re.split(r"[=<>!~\[ ;]", value.strip())[0].strip()
