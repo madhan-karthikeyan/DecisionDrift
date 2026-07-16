@@ -70,6 +70,43 @@ dependencies = ["celery"]
         pkgs = scan_dependencies(tmp_path)
         assert pkgs == []
 
+    def test_scan_nested_dependencies(self, tmp_path: Path):
+        """Regression: Bug #2 — recursive scanning should find nested dep files."""
+        backend = tmp_path / "backend"
+        backend.mkdir()
+        (backend / "requirements.txt").write_text("flask\ncelery\n")
+        frontend = tmp_path / "frontend"
+        frontend.mkdir()
+        (frontend / "package.json").write_text('{"dependencies": {"react": "^18.0", "vue": "^3.0"}}')
+        pkgs = scan_dependencies(tmp_path)
+        assert "flask" in pkgs
+        assert "celery" in pkgs
+        assert "react" in pkgs
+        assert "vue" in pkgs
+
+    def test_scan_nested_dependencies_excludes_node_modules(self, tmp_path: Path):
+        """Regression: Bug #2 — should skip node_modules even when nested."""
+        backend = tmp_path / "backend"
+        backend.mkdir()
+        (backend / "requirements.txt").write_text("flask\n")
+        node_modules = tmp_path / "node_modules"
+        node_modules.mkdir()
+        (node_modules / "package.json").write_text('{"dependencies": {"malicious": "^1.0"}}')
+        pkgs = scan_dependencies(tmp_path)
+        assert "flask" in pkgs
+        assert "malicious" not in pkgs
+
+    def test_scan_nested_dependencies_dedup(self, tmp_path: Path):
+        """Regression: Bug #2 — same dep in multiple files should appear once."""
+        (tmp_path / "requirements.txt").write_text("flask\n")
+        backend = tmp_path / "backend"
+        backend.mkdir()
+        (backend / "requirements.txt").write_text("flask\ncelery\n")
+        pkgs = scan_dependencies(tmp_path)
+        assert "flask" in pkgs
+        assert "celery" in pkgs
+        assert pkgs.count("flask") == 1
+
 
 class TestImportScanner:
     def test_scan_imports(self, tmp_path: Path):

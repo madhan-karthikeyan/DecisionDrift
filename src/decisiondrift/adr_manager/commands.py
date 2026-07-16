@@ -33,6 +33,19 @@ def approve_adr(adr_dir: str, adr_id: str) -> None:
     print(f"{adr_id} approved.")
 
 
+def show_adr(adr_dir: str, adr_id: str) -> DecisionRecord | None:
+    adr_path = Path(adr_dir)
+    target = adr_path / f"{adr_id}.md"
+    if not target.exists():
+        print(f"Error: {adr_id} not found in {adr_dir}")
+        return None
+    record = parse_adr_file(target)
+    if record is None:
+        print(f"Error: could not parse {target}")
+        return None
+    return record
+
+
 def reject_adr(adr_dir: str, adr_id: str, reason: str | None = None) -> None:
     adr_path = Path(adr_dir)
     target = adr_path / f"{adr_id}.md"
@@ -42,6 +55,9 @@ def reject_adr(adr_dir: str, adr_id: str, reason: str | None = None) -> None:
     record = parse_adr_file(target)
     if record is None:
         print(f"Error: could not parse {target}")
+        return
+    if record.status != "proposed":
+        print(f"Error: {adr_id} is not proposed (current status: {record.status})")
         return
     set_status(target, "rejected", rejected_reason=reason)
     print(f"{adr_id} rejected.")

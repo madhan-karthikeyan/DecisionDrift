@@ -18,6 +18,7 @@ def bootstrap(
     adr_dir: str | Path,
     dry_run: bool = True,
     min_confidence: str = "low",
+    max_candidates: int | None = None,
     use_llm: bool = False,
 ) -> list:
     """Scan a repository and generate candidate ADRs.
@@ -27,6 +28,7 @@ def bootstrap(
         adr_dir: Path to existing ADR directory.
         dry_run: If True, print candidates without writing.
         min_confidence: Minimum confidence threshold ("low", "medium", "high").
+        max_candidates: Maximum number of candidate ADRs to generate.
         use_llm: Deprecated in Bootstrap V3. Deterministic evidence-based
                  inference is always used.
     """
@@ -59,6 +61,10 @@ def bootstrap(
                     existing_titles.add(record.title)
 
     suggestions = generate_v3_suggestions(model, existing_titles, next_id, min_confidence=min_confidence)
+
+    # Apply max_candidates limit (keep highest confidence first)
+    if max_candidates is not None and len(suggestions) > max_candidates:
+        suggestions = suggestions[:max_candidates]
 
     if not suggestions:
         print("  No enforceable ADRs to suggest.")

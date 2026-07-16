@@ -121,3 +121,19 @@ class TestBootstrapFlow:
             ],
         )
         assert result.exit_code == 0
+
+    def test_bootstrap_with_max_candidates(self, flask_repo: Path):
+        adr_dir = flask_repo / "docs/adr"
+        runner = CliRunner()
+        result = runner.invoke(
+            cli,
+            [
+                "bootstrap",
+                str(flask_repo),
+                "--adr-dir",
+                str(adr_dir),
+                "--max-candidates",
+                "1",
+            ],
+        )
+        assert result.exit_code == 0

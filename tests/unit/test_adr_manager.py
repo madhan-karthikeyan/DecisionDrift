@@ -130,8 +130,106 @@ class TestADRManagerCommands:
     def test_reject_nonexistent_adr(self, adr_dir_with_records: Path):
         reject_adr(str(adr_dir_with_records), "ADR-9999")
 
+    def test_reject_already_accepted_adr_fails(self, adr_dir_with_records: Path):
+        """Regression: Bug #1 — reject should not overwrite accepted ADRs."""
+        reject_adr(str(adr_dir_with_records), "ADR-0001")
+        from decisiondrift.adr.parser import parse_adr_file
+
+        record = parse_adr_file(adr_dir_with_records / "ADR-0001.md")
+        assert record is not None
+        assert record.status == "accepted", "Rejecting an accepted ADR should not change its status"
+
+    def test_reject_already_rejected_adr_fails(self, adr_dir_with_records: Path):
+        """Regression: Bug #1 — reject should not overwrite rejected ADRs."""
+        reject_adr(str(adr_dir_with_records), "ADR-0003", reason="First rejection")
+        reject_adr(str(adr_dir_with_records), "ADR-0003", reason="Second rejection")
+        from decisiondrift.adr.parser import parse_adr_file
+
+        record = parse_adr_file(adr_dir_with_records / "ADR-0003.md")
+        assert record is not None
+        assert record.rejected_reason == "First rejection", "Should keep first rejection reason"
+
     def test_approve_nonexistent_adr(self, adr_dir_with_records: Path):
         approve_adr(str(adr_dir_with_records), "ADR-9999")
+
+    def test_show_adr(self, adr_dir_with_records: Path):
+        from decisiondrift.adr_manager.commands import show_adr
+        record = show_adr(str(adr_dir_with_records), "ADR-0001")
+        assert record is not None
+        assert record.id == "ADR-0001"
+        assert record.title == "Use FastAPI for HTTP APIs"
+
+    def test_show_nonexistent_adr(self, adr_dir_with_records: Path):
+        from decisiondrift.adr_manager.commands import show_adr
+        record = show_adr(str(adr_dir_with_records), "ADR-9999")
+        assert record is None
+
+
+class TestGuardCommands:
+    def test_guard_install_creates_hook(self, tmp_path: Path):
+        from click.testing import CliRunner
+        from decisiondrift.cli import cli
+
+        repo = tmp_path / "test_repo"
+        repo.mkdir()
+        (repo / ".git").mkdir()
+        (repo / ".git" / "hooks").mkdir()
+
+        runner = CliRunner()
+        result = runner.invoke(cli, ["guard", "--install", "--repo", str(repo)])
+        assert result.exit_code == 0
+        hook_file = repo / ".git" / "hooks" / "pre-commit"
+        assert hook_file.exists()
+        content = hook_file.read_text()
+        assert "decisiondrift enforce --staged" in content
+        assert str(repo) in content
+
+    def test_guard_uninstall_removes_hook(self, tmp_path: Path):
+        from click.testing import CliRunner
+        from decisiondrift.cli import cli
+
+        repo = tmp_path / "test_repo"
+        repo.mkdir()
+        (repo / ".git").mkdir()
+        (repo / ".git" / "hooks").mkdir()
+        hook_file = repo / ".git" / "hooks" / "pre-commit"
+        hook_file.write_text("#!/bin/sh\nexec decisiondrift enforce --staged --repo /tmp\n")
+        hook_file.chmod(0o755)
+
+        runner = CliRunner()
+        result = runner.invoke(cli, ["guard", "--uninstall", "--repo", str(repo)])
+        assert result.exit_code == 0
+        assert not hook_file.exists()
+
+    def test_guard_uninstall_no_hook(self, tmp_path: Path):
+        from click.testing import CliRunner
+        from decisiondrift.cli import cli
+
+        repo = tmp_path / "test_repo"
+        repo.mkdir()
+        (repo / ".git").mkdir()
+        (repo / ".git" / "hooks").mkdir()
+
+        runner = CliRunner()
+        result = runner.invoke(cli, ["guard", "--uninstall", "--repo", str(repo)])
+        assert result.exit_code == 0
+        assert "Nothing to remove" in result.output
+
+    def test_guard_install_preserves_adr_dir(self, tmp_path: Path):
+        from click.testing import CliRunner
+        from decisiondrift.cli import cli
+
+        repo = tmp_path / "test_repo"
+        repo.mkdir()
+        (repo / ".git").mkdir()
+        (repo / ".git" / "hooks").mkdir()
+
+        runner = CliRunner()
+        result = runner.invoke(cli, ["guard", "--install", "--repo", str(repo), "--adr-dir", "custom/adr"])
+        assert result.exit_code == 0
+        hook_file = repo / ".git" / "hooks" / "pre-commit"
+        content = hook_file.read_text()
+        assert "--adr-dir custom/adr" in content
 
     def test_list_empty_directory(self, tmp_path: Path):
         empty_dir = tmp_path / "empty_adr"

@@ -17,9 +17,9 @@ Generate candidate ADRs from repository structure.
 |------|---------|-------------|
 | `--dry-run` | `true` | Preview candidates without writing |
 | `--apply` | `false` | Write candidates to `--adr-dir` |
-| `--min-confidence` | `0.3` | Minimum confidence threshold (0.0–1.0) |
+| `--min-confidence` | `low` | Minimum confidence level (`low`, `medium`, `high`) |
+| `--max-candidates` | — | Maximum number of candidate ADRs to generate |
 | `--adr-dir` | `docs/adr` | ADR output directory |
-| `--max-candidates` | `20` | Maximum candidates to generate |
 
 **Exit codes:** `0` on success, `1` on error.
 
@@ -29,7 +29,8 @@ Enforce ADR rules against a diff or full repository. **No LLM required.**
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--from-git` | `false` | Read diff from `git diff` |
+| `--from-git` | `false` | Read diff from `git diff` (working tree changes) |
+| `--staged` | `false` | Read diff from `git diff --cached` (staged changes) |
 | `--repo` | `.` | Repository root |
 | `--adr-dir` | `docs/adr` | ADR directory |
 | `--fail-on` | `block` | Minimum severity for non-zero exit (`block`, `require_approval`, `warn`, `info`) |
@@ -42,19 +43,22 @@ LLM-based semantic violation classification.
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--from-git` | `false` | Read diff from `git diff` |
+| `--from-git` | `false` | Read diff from `git diff` (working tree) |
+| `--staged` | `false` | Read diff from `git diff --cached` (staged) |
 | `--repo` | `.` | Repository root |
 | `--adr-dir` | `docs/adr` | ADR directory |
-| `--llm-api-key` | `env` | LLM API key |
-| `--llm-model` | `gpt-4o` | LLM model |
-| `--llm-base-url` | — | Custom API base URL |
+| `--llm-api-key` | `env/DECISIONDRIFT_LLM_API_KEY` | LLM API key (overrides config and env) |
+| `--llm-model` | `gpt-4o` | LLM model (overrides config and env) |
+| `--llm-base-url` | — | Custom API base URL (overrides config and env) |
 | `--max-pairs` | `15` | Max (ADR, symbol) pairs to classify |
 | `--similarity-threshold` | `0.5` | Minimum similarity for ADR consideration |
 | `--timeout` | `300` | Max wall-clock time in seconds |
 
+**Precedence:** CLI flags > Environment variables > Config file > Defaults
+
 **Exit codes:** `0` on no violations, `1` on violations found.
 
-Without an LLM API key, prints a message recommending `enforce`.
+Without an LLM API key, displays a message recommending `decisiondrift enforce --from-git`.
 
 ### `decisiondrift audit`
 
@@ -62,7 +66,8 @@ ADR health audit.
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--adr-dir` | `docs/adr` | ADR directory |
+| `--repo` | `.` | Repository root |
+| `--adr-dir` | `<repo>/docs/adr` | ADR directory |
 
 Reports: expired/stale ADRs, drift from current code, coverage gaps, quality scores.
 
@@ -92,6 +97,7 @@ Manage ADRs.
 | Subcommand | Description |
 |------------|-------------|
 | `list` | List ADRs (`--status` to filter by status, `--source` to filter by source) |
+| `show ADR-XXXX` | Show full details of a single ADR |
 | `approve ADR-XXXX` | Approve a proposed ADR |
 | `reject ADR-XXXX` | Reject a proposed ADR |
 
@@ -103,10 +109,10 @@ Pre-commit hook runner.
 
 | Flag | Description |
 |------|-------------|
-| `--install` | Install the pre-commit hook |
+| `--install` | Install the pre-commit hook (uses `git diff --cached`) |
 | `--uninstall` | Remove the pre-commit hook |
 
-Runs `decisiondrift enforce --from-git` when triggered by git.
+Runs `decisiondrift enforce --staged` when triggered by git (analyzes staged changes only).
 
 ## Exit Code Summary
 

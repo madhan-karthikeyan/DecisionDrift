@@ -8,7 +8,7 @@ from pathlib import Path
 import click
 
 from decisiondrift import __version__
-from decisiondrift.adr_manager.commands import approve_adr, list_adrs, reject_adr
+from decisiondrift.adr_manager.commands import approve_adr, list_adrs, reject_adr, show_adr
 
 
 @click.group()
@@ -31,6 +31,13 @@ def adr_list(status: str | None, source: str | None, adr_dir: str):
     records = list_adrs(adr_dir, status=status, source=source)
     if not records:
         click.echo("No ADRs found.")
+        if not status and not source:
+            click.echo("")
+            click.echo("  Generate candidate ADRs with:")
+            click.echo("    decisiondrift bootstrap <repo-path> --apply")
+            click.echo("")
+            click.echo("  Or list with filters:")
+            click.echo("    decisiondrift adr list --status proposed")
         sys.exit(1)
     _print_adr_table(records)
 
@@ -52,6 +59,49 @@ def adr_reject(adr_id: str, reason: str | None, adr_dir: str):
     reject_adr(adr_dir, adr_id, reason=reason)
 
 
+@adr.command("show")
+@click.argument("adr_id")
+@click.option("--adr-dir", default="docs/adr", show_default=True, help="Path to ADR directory")
+def adr_show(adr_id: str, adr_dir: str):
+    """Show details of a single ADR."""
+    record = show_adr(adr_dir, adr_id)
+    if record is None:
+        sys.exit(1)
+    click.echo(f"ID:       {record.id}")
+    click.echo(f"Title:    {record.title}")
+    click.echo(f"Status:   {record.status}")
+    click.echo(f"Severity: {record.severity}")
+    click.echo(f"Source:   {record.source}")
+    if record.type:
+        click.echo(f"Type:     {record.type}")
+    if record.confidence:
+        click.echo(f"Confidence: {record.confidence.value}")
+    if record.rationale:
+        click.echo(f"\nRationale:\n{record.rationale}")
+    if record.prohibitions:
+        click.echo(f"\nProhibitions: {', '.join(record.prohibitions)}")
+    if record.keywords:
+        click.echo(f"Keywords: {', '.join(record.keywords)}")
+    if record.exceptions:
+        click.echo(f"Exceptions: {record.exceptions}")
+    if record.alternatives_rejected:
+        click.echo(f"Alternatives rejected: {', '.join(record.alternatives_rejected)}")
+    if record.owner:
+        click.echo(f"Owner: {record.owner}")
+    if record.review_after:
+        click.echo(f"Review by: {record.review_after}")
+    if record.expires_after:
+        click.echo(f"Expires: {record.expires_after}")
+    if record.rejected_reason:
+        click.echo(f"Rejection reason: {record.rejected_reason}")
+    if record.superseded_by:
+        click.echo(f"Superseded by: {record.superseded_by}")
+    if record.evidence:
+        click.echo(f"\nEvidence ({len(record.evidence)} items):")
+        for e in record.evidence:
+            click.echo(f"  - {e}")
+
+
 @cli.command()
 @click.argument("path", type=click.Path(exists=True))
 @click.option("--adr-dir", default="docs/adr", show_default=True, help="Path to ADR directory")
@@ -64,8 +114,9 @@ def adr_reject(adr_id: str, reason: str | None, adr_dir: str):
     type=click.Choice(["low", "medium", "high"]),
     help="Minimum confidence level",
 )
+@click.option("--max-candidates", type=int, default=None, help="Maximum number of candidate ADRs to generate")
 @click.option("--llm", is_flag=True, help="Deprecated; Bootstrap V3 always uses deterministic inference")
-def bootstrap(path: str, adr_dir: str, dry_run: bool, apply: bool, min_confidence: str, llm: bool):
+def bootstrap(path: str, adr_dir: str, dry_run: bool, apply: bool, min_confidence: str, max_candidates: int | None, llm: bool):
     """Generate candidate ADRs from repository structure.
 
     Bootstrap V3 uses deterministic evidence collection, repository modeling,
@@ -77,7 +128,7 @@ def bootstrap(path: str, adr_dir: str, dry_run: bool, apply: bool, min_confidenc
         dry_run = False
 
     try:
-        run_bootstrap(path, adr_dir=adr_dir, dry_run=dry_run, min_confidence=min_confidence, use_llm=llm)
+        run_bootstrap(path, adr_dir=adr_dir, dry_run=dry_run, min_confidence=min_confidence, max_candidates=max_candidates, use_llm=llm)
     except Exception as e:
         click.echo(f"Error during bootstrap: {e}", err=True)
         sys.exit(1)
@@ -93,11 +144,12 @@ def ingest(file: str, adr_dir: str):
     run_ingest(file, adr_dir)
 
 
-def _read_diff(diff_file: str | None, repo: str, from_git: bool) -> str | None:
+def _read_diff(diff_file: str | None, repo: str, from_git: bool, staged: bool = False) -> str | None:
     if from_git:
+        cmd = ["git", "diff", "--cached"] if staged else ["git", "diff"]
         try:
             result = subprocess.run(
-                ["git", "diff"],
+                cmd,
                 capture_output=True,
                 text=True,
                 cwd=repo,
@@ -142,15 +194,37 @@ def _check_adr_dir(adr_dir: str) -> bool:
 @click.option("--repo", default=".", show_default=True, help="Path to repository root")
 @click.option("--adr-dir", default=None, help="Path to ADR directory (default: <repo>/docs/adr)")
 @click.option("--from-git", is_flag=True, help="Get diff from `git diff` in the repo")
-def review(diff_file: str | None, repo: str, adr_dir: str | None, from_git: bool):
+@click.option("--staged", is_flag=True, help="Get diff from `git diff --cached` (staged changes)")
+@click.option("--llm-api-key", type=str, default=None, help="LLM API key (overrides config and env)")
+@click.option("--llm-model", type=str, default=None, help="LLM model name (overrides config and env)")
+@click.option("--llm-base-url", type=str, default=None, help="LLM API base URL (overrides config and env)")
+@click.option("--max-pairs", type=int, default=None, help="Max (ADR, symbol) pairs to classify")
+@click.option("--similarity-threshold", type=float, default=None, help="Minimum similarity for ADR consideration")
+@click.option("--timeout", type=int, default=None, help="Max wall-clock time in seconds")
+def review(diff_file: str | None, repo: str, adr_dir: str | None, from_git: bool, staged: bool,
+           llm_api_key: str | None, llm_model: str | None, llm_base_url: str | None,
+           max_pairs: int | None, similarity_threshold: float | None, timeout: int | None):
     """Evaluate changes against accepted ADRs."""
     from decisiondrift.config import load_config
     from decisiondrift.review.service import run_review
 
     cfg = load_config()
+    if llm_api_key is not None:
+        cfg["llm"]["api_key"] = llm_api_key
+    if llm_model is not None:
+        cfg["llm"]["model"] = llm_model
+    if llm_base_url is not None:
+        cfg["llm"]["base_url"] = llm_base_url
+    if max_pairs is not None:
+        cfg["max_pairs_per_pr"] = max_pairs
+    if similarity_threshold is not None:
+        cfg["similarity_threshold"] = similarity_threshold
+    if timeout is not None:
+        cfg["wall_clock_budget_seconds"] = timeout
+
     resolved_adr_dir = Path(adr_dir) if adr_dir else Path(repo) / "docs" / "adr"
 
-    diff_text = _read_diff(diff_file, repo, from_git)
+    diff_text = _read_diff(diff_file, repo, from_git, staged=staged)
     if diff_text is None:
         return
     if not diff_text.strip():
@@ -202,7 +276,8 @@ def impact(diff_file: str | None, repo: str, from_git: bool):
 @click.argument("diff_file", type=click.Path(exists=True, dir_okay=False), required=False)
 @click.option("--repo", default=".", show_default=True, help="Path to repository root")
 @click.option("--adr-dir", default=None, help="Path to ADR directory (default: <repo>/docs/adr)")
-@click.option("--from-git", is_flag=True, help="Get diff from `git diff` in the repo")
+@click.option("--from-git", is_flag=True, help="Get diff from `git diff` (working tree)")
+@click.option("--staged", is_flag=True, help="Get diff from `git diff --cached` (staged changes)")
 @click.option(
     "--fail-on",
     default="block",
@@ -210,7 +285,7 @@ def impact(diff_file: str | None, repo: str, from_git: bool):
     type=click.Choice(["block", "require_approval", "warn", "info"]),
     help="Minimum action level that causes non-zero exit",
 )
-def enforce(diff_file: str | None, repo: str, adr_dir: str | None, from_git: bool, fail_on: str):
+def enforce(diff_file: str | None, repo: str, adr_dir: str | None, from_git: bool, staged: bool, fail_on: str):
     """Enforce ADR rules against a diff or full repo.
 
     Deterministic rule engine: checks dependencies, imports, paths, APIs, and configs.
@@ -223,13 +298,19 @@ def enforce(diff_file: str | None, repo: str, adr_dir: str | None, from_git: boo
     resolved_adr_dir = Path(adr_dir) if adr_dir else Path(repo) / "docs" / "adr"
     _check_adr_dir(str(resolved_adr_dir))
 
-    diff_text = _read_diff(diff_file, repo, from_git) if (diff_file or from_git) else None
+    diff_text = _read_diff(diff_file, repo, from_git, staged=staged) if (diff_file or from_git or staged) else None
 
     try:
         decisions = load_adrs(str(resolved_adr_dir), status_filter={"accepted"})
         active = resolve_active(decisions)
         if not active:
             click.echo("No accepted ADRs found. No rules to enforce.")
+            click.echo("")
+            click.echo("  Approve proposed ADRs with:")
+            click.echo("    decisiondrift adr approve <adr-id>")
+            click.echo("")
+            click.echo("  Or generate new candidate ADRs with:")
+            click.echo("    decisiondrift bootstrap <repo-path> --apply")
             return
 
         result = enforce_from_adrs(active, repo_path=repo, diff_text=diff_text)
@@ -424,19 +505,28 @@ def _adr_quality_score(record) -> tuple[int, list[str], list[tuple[str, int]]]:
 @click.option("--repo", default=".", show_default=True, help="Path to repository root")
 @click.option("--adr-dir", default=None, help="Path to ADR directory (default: <repo>/docs/adr)")
 @click.option("--install", is_flag=True, help="Install the pre-commit hook")
-def guard(repo: str, adr_dir: str | None, install: bool):
+@click.option("--uninstall", is_flag=True, help="Remove the pre-commit hook")
+def guard(repo: str, adr_dir: str | None, install: bool, uninstall: bool):
     """Pre-commit hook: enforce ADRs before commit.
 
     Run manually or install as a git pre-commit hook with --install.
     """
+    hook_path = Path(repo) / ".git" / "hooks" / "pre-commit"
+
+    if uninstall:
+        if hook_path.exists():
+            hook_path.unlink()
+            click.echo(f"Pre-commit hook removed from {hook_path}")
+        else:
+            click.echo("No pre-commit hook found. Nothing to remove.")
+        return
+
     if install:
-        hook_path = Path(repo) / ".git" / "hooks" / "pre-commit"
         hook_path.parent.mkdir(parents=True, exist_ok=True)
-        args = [shlex.quote(repo)]
+        hook_content = "#!/bin/sh\nexec decisiondrift enforce --staged --repo " + shlex.quote(repo)
         if adr_dir:
-            args.extend(["--adr-dir", shlex.quote(adr_dir)])
-        hook_content = "#!/bin/sh\nexec decisiondrift enforce --from-git --repo " + " ".join(args)
-        hook_path.write_text(hook_content.strip())
+            hook_content += " --adr-dir " + shlex.quote(adr_dir)
+        hook_path.write_text(hook_content.strip() + "\n")
         hook_path.chmod(0o755)
         click.echo(f"Pre-commit hook installed at {hook_path}")
         return
@@ -445,7 +535,7 @@ def guard(repo: str, adr_dir: str | None, install: bool):
     from click.testing import CliRunner
 
     runner = CliRunner()
-    args = ["enforce", "--from-git", "--repo", repo]
+    args = ["enforce", "--staged", "--repo", repo]
     if adr_dir:
         args.extend(["--adr-dir", adr_dir])
     result = runner.invoke(cli, args)
