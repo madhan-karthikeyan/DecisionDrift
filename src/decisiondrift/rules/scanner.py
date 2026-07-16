@@ -19,6 +19,7 @@ from decisiondrift.utils.dependency_parser import (
     parse_gemfile_lock,
     parse_go_mod,
     parse_package_json,
+    parse_package_swift,
     parse_pyproject_toml,
     parse_requirements_txt,
 )
@@ -56,6 +57,7 @@ def scan_dependencies(repo_path: str | Path) -> list[str]:
         "Gemfile": parse_gemfile,
         "Gemfile.lock": parse_gemfile_lock,
         "composer.json": parse_composer_json,
+        "Package.swift": parse_package_swift,
         "build.gradle.kts": parse_build_gradle_kts,
     }
 
@@ -123,7 +125,7 @@ def _find_dep_file_containing(repo: Path, match: str) -> str | None:
     dep_file_names = {
         "requirements.txt", "pyproject.toml", "package.json", "go.mod",
         "Cargo.toml", "Gemfile", "Gemfile.lock", "composer.json",
-        "build.gradle.kts",
+        "Package.swift", "build.gradle.kts",
     }
     for dep_file in repo.rglob("*"):
         if not dep_file.is_file() or dep_file.name not in dep_file_names:

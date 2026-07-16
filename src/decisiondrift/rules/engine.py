@@ -29,6 +29,7 @@ from decisiondrift.utils.dependency_parser import (
     parse_gemfile_lock,
     parse_go_mod,
     parse_package_json,
+    parse_package_swift,
     parse_pyproject_toml,
     parse_requirements_txt,
 )
@@ -267,6 +268,8 @@ def _extract_deps_from_file(path: Path) -> list[str]:
         return [dep for dep, _role in parse_gemfile_lock(path)]
     if name == "composer.json":
         return [dep for dep, _role in parse_composer_json(path)]
+    if name == "Package.swift":
+        return [dep for dep, _role in parse_package_swift(path)]
     if name == "build.gradle.kts":
         return [dep for dep, _role in parse_build_gradle_kts(path)]
     if name.endswith(".csproj"):

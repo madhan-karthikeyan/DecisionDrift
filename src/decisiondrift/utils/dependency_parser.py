@@ -269,5 +269,28 @@ def parse_build_gradle_kts(path: Path) -> list[tuple[str, str]]:
     return deps
 
 
+def parse_package_swift(path: Path) -> list[tuple[str, str]]:
+    deps: list[tuple[str, str]] = []
+    if not path.exists():
+        return deps
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return deps
+    seen: set[str] = set()
+    for m in re.finditer(r'\.package\(url:\s*"([^"]+)"', text):
+        url = m.group(1)
+        name = url.rstrip("/").split("/")[-1].replace(".git", "")
+        if name and name not in seen:
+            seen.add(name)
+            deps.append((name, "runtime"))
+    for m in re.finditer(r'//\s*dependency\s+"([^"]+)"', text):
+        name = m.group(1)
+        if name and name not in seen:
+            seen.add(name)
+            deps.append((name, "runtime"))
+    return deps
+
+
 def _dep_name(value: str) -> str:
     return re.split(r"[=<>!~\[ ;]", value.strip())[0].strip()
