@@ -186,17 +186,20 @@ def parse_gemfile_lock(path: Path) -> list[tuple[str, str]]:
     seen: set[str] = set()
     in_specs = False
     for line in text.splitlines():
-        if line.strip().startswith("GEM") and "specs:" in line:
+        if line.strip() == "GEM":
+            in_specs = False
+            continue
+        if line.strip().startswith("specs:"):
             in_specs = True
             continue
         if in_specs:
-            if line.strip().startswith(" ") and line.strip() != "" and "!" not in line[:5]:
-                name = line.strip().split()[0] if line.strip() else ""
-                name = name.strip("()")
+            stripped = line.strip()
+            if stripped and not stripped.startswith("#") and not stripped.startswith("PLATFORMS") and not stripped.startswith("DEPENDENCIES"):
+                name = stripped.split()[0].strip("()")
                 if name and name not in seen:
                     seen.add(name)
                     deps.append((name, "runtime"))
-            elif line.strip() == "" or line.strip().startswith("PLATFORMS"):
+            elif stripped == "" or stripped.startswith("PLATFORMS"):
                 in_specs = False
     return deps
 
