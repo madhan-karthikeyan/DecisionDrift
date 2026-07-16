@@ -36,6 +36,8 @@ with `--llm`, recognizes unknown technologies and generates ADR templates via LL
 
 Enforce ADR rules against a diff or full repository. **No LLM required.**
 
+Scans 5 rule types: dependency (5 file formats), import (Python AST + Tree-sitter for JS/TS/Go/Java/Rust), API calls (same multi-language), path (regex), config (key-value). Also loads custom rules from `decisiondrift.yml` `rules:` section.
+
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--from-git` | `false` | Read diff from `git diff` (working tree changes) |
@@ -43,8 +45,28 @@ Enforce ADR rules against a diff or full repository. **No LLM required.**
 | `--repo` | `.` | Repository root |
 | `--adr-dir` | `docs/adr` | ADR directory |
 | `--fail-on` | `block` | Minimum severity for non-zero exit (`block`, `require_approval`, `warn`, `info`) |
+| `--format` | `text` | Output format (`text`, `json`, `sarif`, `markdown`) |
+| `--output` | — | Write output to file instead of stdout |
+
+**Output formats:**
+- `text`: Human-readable console output (default)
+- `json`: Structured JSON via `ReportEnvelope`
+- `sarif`: SARIF v2.1.0 for GitHub code scanning integration
+- `markdown`: Rendered markdown report
 
 **Exit codes:** `0` on no violations, `1` on violations at or above `--fail-on` level.
+
+### `decisiondrift init [path]`
+
+Initialize a repository for governance. Runs bootstrap, interactively approves/rejects candidates, installs pre-commit hook, generates `decisiondrift.yml`, and optionally generates CI workflow.
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--yes` | `false` | Non-interactive mode (auto-approve all) |
+| `--template` | — | ADR template to use |
+| `--with-ci` | `false` | Also generate `.github/workflows/decisiondrift.yml` |
+
+**Exit codes:** `0` on success, `1` on error.
 
 ### `decisiondrift review [diff]`
 
@@ -101,16 +123,23 @@ Extract candidate ADRs from free-text notes (LLM required).
 
 ### `decisiondrift adr`
 
-Manage ADRs.
+Manage ADRs and their lifecycle.
 
 | Subcommand | Description |
 |------------|-------------|
-| `list` | List ADRs (`--status` to filter by status, `--source` to filter by source) |
+| `review [path]` | Run bootstrap + interactively approve/reject each candidate |
+| `list` | List ADRs (`--status` to filter, `--source` to filter) |
 | `show ADR-XXXX` | Show full details of a single ADR |
-| `approve ADR-XXXX` | Approve a proposed ADR |
-| `reject ADR-XXXX` | Reject a proposed ADR |
+| `approve ADR-XXXX` | Approve a proposed ADR (status → accepted) |
+| `reject ADR-XXXX` | Reject a proposed ADR (status → rejected) |
+| `deprecate ADR-XXXX` | Deprecate an ADR (status → deprecated) |
+| `archive ADR-XXXX` | Alias for deprecate |
+| `supersede ADR-XXXX <title>` | Supersede an ADR: marks old as superseded, creates new proposed ADR |
+| `edit ADR-XXXX` | Open ADR in `$EDITOR` for editing |
+| `history ADR-XXXX` | Show `git log --follow` for the ADR file |
 
 **Exit codes (`list`):** `0` if ADRs found, `1` if empty.
+**Exit codes (`review`):** `0` if at least one ADR approved, `1` if none approved.
 
 ### `decisiondrift guard`
 
@@ -123,9 +152,39 @@ Pre-commit hook runner.
 
 Runs `decisiondrift enforce --staged` when triggered by git (analyzes staged changes only).
 
+## Configuration (`decisiondrift.yml`)
+
+Auto-discovered from the current directory. Supports custom rule packs:
+
+```yaml
+llm:
+  api_key: null       # Set DECISIONDRIFT_LLM_API_KEY or configure here
+  model: gpt-4o
+  base_url: null      # Use for Ollama, Groq, etc.
+
+adr_dir: docs/adr
+
+# Custom rule packs — additional rules beyond ADR-derived ones.
+# Types: dependency, import, path, api, config
+# Actions: block, require_approval, warn, info
+rules:
+  - match: deprecated-library
+    type: dependency
+    action: block
+    description: "Block deprecated library"
+```
+
 ## Exit Code Summary
 
-| Code | Scenario |
-|------|----------|
-| `0` | Success / no violations |
-| `1` | Violations detected / stale ADRs / error |
+| Command | Exit 0 | Exit 1 |
+|---------|--------|--------|
+| `bootstrap` | Success | Error |
+| `enforce` | No violations above threshold | Violations found |
+| `audit` | Healthy | Stale/expired/drift found |
+| `review` | No violations | Violations detected |
+| `adr list` | ADRs found | No ADRs match filter |
+| `adr approve/reject` | Success | ADR not found |
+| `adr deprecate/supersede` | Success | ADR not found or invalid state |
+| `adr review` | At least one approved | None approved |
+| `ingest` | Success | Error |
+| `guard` | No violations | Violations found |

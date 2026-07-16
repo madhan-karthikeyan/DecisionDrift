@@ -22,41 +22,46 @@ Decisions → Rules → Enforcement → Drift Detection
 
 ## 2. What's Built
 
-### Shipped (as of v1.0.0-beta)
+### Shipped (as of v1.0.0-beta.3)
 
 | Component | Status | Description |
 |-----------|--------|-------------|
-| Bootstrap V3 | ✅ | Deterministic repository scanning, evidence collection, technology detection, governance candidate generation, enforceability analysis |
+| Bootstrap V3 | ✅ | Deterministic repository scanning, evidence collection, technology detection, governance candidate generation, enforceability analysis (37 techs, 25 templates) |
 | Rule Engine | ✅ | 5 rule types (dependency, import, API, path, config), deterministic, zero LLM cost |
+| Multi-language Import/API Scanning | ✅ | Tree-sitter for JS/TS/Go/Java/Rust imports + API calls (`pip install decisiondrift[ast]`) |
+| Custom Rule Packs | ✅ | `decisiondrift.yml` `rules:` section — additional rules merged with ADR-derived rules |
 | Enforcement | ✅ | Diff-based and full-repo modes, confidence-based severity downgrade, exit-code gating |
+| Output Formats | ✅ | `--format text/json/sarif/markdown` + `--output <file>` on enforce |
 | Audit | ✅ | ADR health: drift detection, stale/expired ADRs, quality scores, coverage analysis |
-| ADR Lifecycle | ✅ | `adr list/approve/reject`, supersession resolution, dependency tracking |
+| ADR Lifecycle | ✅ | `adr list/show/approve/reject/deprecate/archive/supersede/edit/history/review` |
 | Decision Capture | ✅ | `ingest` — free-text to ADR candidates (requires LLM key) |
 | Review | ✅ | LLM-based semantic violation classification (requires LLM key) |
 | Guard | ✅ | Pre-commit hook with deterministic enforcement |
-| Impact | ✅ | Diff parsing, AST extraction, symbol analysis |
-| GitHub Action | ✅ | Full CI integration with deterministic + LLM paths |
-| 310 tests | ✅ | Unit, integration, snapshot — passing |
+| Impact | ✅ | Diff parsing, AST extraction, symbol analysis (Python + Tree-sitter multi-language) |
+| GitHub Action | ✅ | SARIF output, commit status checks, formal PR review (comment/request-changes/auto modes) |
+| `init` Command | ✅ | One-command project setup: bootstrap → approve → hook → config → CI |
+| 363 tests | ✅ | Unit, integration, snapshot — passing |
 
 ### Architecture (current)
 
 ```
 src/decisiondrift/
   cli.py                     # CLI entrypoint (Click)
-  config.py                  # Config loader (YAML + .env)
-  models/schema.py           # Pydantic models (DecisionRecord, ReviewResult, etc.)
+  config.py                  # Config loader (YAML + .env + custom rules)
+  models/schema.py           # Pydantic models (DecisionRecord, ReportEnvelope, etc.)
   adr/                       # ADR loader, parser, writer, supersession, id allocator, dedup
-  adr_manager/               # adr list/approve/reject commands
-  bootstrap/                 # V3 pipeline: evidence → technology candidates → governance → enforceability → ADR suggestions
+  adr_manager/               # adr list/approve/reject/deprecate/supersede/edit/history/review
+  bootstrap/                 # V3 pipeline + registry (37 techs) + cache + LLM knowledge provider
   rules/                     # Deterministic rule engine (scanner, engine, models)
   classification/            # LLM classifier
   review/                    # Orchestrator pipeline (diff → retrieval → classification → report)
-  report/                    # Output formatters (text, GitHub comment)
+  report/                    # Output formatters (text, json, sarif, markdown, GitHub comment)
   impact/                    # Diff parser + AST extraction (Python + Tree-sitter)
   ingest/                    # Free-text → ADR pipeline (segmentation → LLM extraction → dedup → write)
   retrieval/                 # Keyword-based ADR retrieval
   github/                    # GitHub Action adapter, client, comment manager
   llm/                       # LLM client abstraction (OpenAI, Groq, Ollama)
+  init/                      # Project initialization service
   utils/                     # Shared utilities (dependency_parser)
 ```
 
@@ -66,16 +71,24 @@ src/decisiondrift/
 
 | Command | Description | LLM Required |
 |---------|-------------|-------------|
-| `bootstrap <path>` | Generate ADR candidates from repo structure (V3 deterministic) | No |
-| `enforce [diff]` | Enforce ADR rules against diff or full repo | No |
+| `init [path]` | One-command project setup: bootstrap → approve → hook → config → CI | No |
+| `bootstrap <path>` | Generate ADR candidates from repo structure (V3 deterministic) | No (--llm optional) |
+| `enforce [diff]` | Enforce ADR rules against diff or full repo (--format json/sarif/markdown) | No |
 | `audit` | ADR health: drift, stale/expired, quality, coverage | No |
 | `guard [--install]` | Pre-commit hook runner | No |
 | `impact [diff]` | Analyze diff for impacted symbols | No |
 | `review [diff]` | LLM semantic violation classification | Yes |
 | `ingest <file>` | Extract ADR candidates from free-text notes | Yes |
 | `adr list` | List ADRs (filter by status, source) | No |
+| `adr show <id>` | Show full ADR details | No |
 | `adr approve <id>` | Approve a proposed ADR | No |
 | `adr reject <id>` | Reject a proposed ADR | No |
+| `adr deprecate <id>` | Deprecate an ADR | No |
+| `adr archive <id>` | Alias for deprecate | No |
+| `adr supersede <id> <title>` | Supersede with new ADR | No |
+| `adr edit <id>` | Open ADR in $EDITOR | No |
+| `adr history <id>` | Show git history for ADR file | No |
+| `adr review [path]` | Bootstrap + interactive approve/reject | No |
 
 ---
 
@@ -86,8 +99,8 @@ src/decisiondrift/
 | Type | What It Scans | Method |
 |------|--------------|--------|
 | `dependency` | requirements.txt, pyproject.toml, go.mod, package.json, Cargo.toml | File parsing |
-| `import` | Python import statements | AST scanning |
-| `api` | Function/method calls in Python files | AST pattern matching |
+| `import` | Python + JS/TS/Go/Java/Rust import statements | AST + Tree-sitter |
+| `api` | Function/method calls in Python + JS/TS/Go/Java/Rust | AST + Tree-sitter |
 | `path` | File paths and directory structure | Regex matching |
 | `config` | Config file keys/values (.yml, .toml, .ini, .json, .cfg, .env) | Pattern matching |
 
@@ -150,8 +163,8 @@ ADR Suggestions (ADR with prohibitions + rules)
 | `proposed` | Bootstrap, Ingest, or manual draft | No |
 | `accepted` | `adr approve` (human) | Yes |
 | `rejected` | `adr reject` (human) | No (kept for dedup) |
-| `deprecated` | Manual edit | No |
-| `superseded` | Manual edit with `superseded_by` | No |
+| `deprecated` | `adr deprecate` / `adr archive` | No |
+| `superseded` | `adr supersede` | No |
 
 Only `accepted` ADRs participate in enforcement. Generated candidates can never silently block a PR.
 
@@ -189,9 +202,11 @@ Only `accepted` ADRs participate in enforcement. Generated candidates can never 
 | `audit` | No expired, stale, drifted, or unreviewed ADRs | Issues found |
 | `review` | No violations or LLM unavailable | Violations detected |
 | `adr list` | ADRs found | No ADRs match filter |
-| `adr approve/reject` | Success | ADR not found |
+| `adr approve/reject/deprecate/supersede` | Success | ADR not found or invalid state |
+| `adr review` | At least one approved | None approved |
 | `ingest` | Success | Error |
 | `guard` | No violations | Violations found |
+| `init` | Success | Error |
 
 ---
 
@@ -229,7 +244,7 @@ Assuming real-user feedback confirms demand:
 | Limitation | Impact | Mitigation |
 |------------|--------|------------|
 | Keyword-only retrieval | May miss ADRs when terms don't match | Embedding-based fallback in extras |
-| Python-focused AST | Non-Python enforcement limited to dep/path/config rules | Tree-sitter in `[ast]` extras |
+| Python-focused AST | Non-Python enforcement limited to dep/path/config rules | ✅ Tree-sitter import/API scanning in `[ast]` extras |
 | Call-graph soundness | AST performs localized syntax matching, not deep dataflow/alias tracking | LLM semantic review provides deeper analysis |
 | Bootstrap is heuristic | Directory detection ≠ architectural understanding | Human approval gate |
 | LLM required for review | Semantic classification not available without API key | Use `enforce` instead |

@@ -9,8 +9,9 @@ graph TD
     CLI --> A[audit]
     CLI --> R[review diff]
     CLI --> I[ingest file]
-    CLI --> L[adr list/approve/reject]
+    CLI --> L[adr list/approve/reject/deprecate/supersede/edit/history/review]
     CLI --> G[guard --install]
+    CLI --> INIT[init path]
 
     B --> |Deterministic - no LLM| S[scan_repo]
     S --> SS[structure_scan.py<br>dirs, files, indicators]
@@ -20,10 +21,11 @@ graph TD
 
     E --> |Deterministic - no LLM| EN[engine.py]
     EN --> SD[scan_dependencies<br>5 dep file types]
-    EN --> SI[scan_imports<br>Python AST]
-    EN --> SA[scan_api_calls<br>Python AST]
+    EN --> SI[scan_imports<br>Python AST + Tree-sitter: JS/TS/Go/Java/Rust]
+    EN --> SA[scan_api_calls<br>Python AST + Tree-sitter: JS/TS/Go/Java/Rust]
     EN --> SP[scan_paths<br>regex]
     EN --> SC[scan_config<br>YAML/JSON/TOML/INI]
+    EN --> CR[custom_rules<br>decisiondrift.yml rules section]
 
     A --> |Deterministic - no LLM| AM[adr_manager]
     AM --> CD[check_drift]
@@ -40,6 +42,12 @@ graph TD
 
     G --> |Deterministic| PRE[pre-commit hook]
     PRE --> ENF[enforce --from-git]
+
+    INIT --> B
+    INIT --> INT_REVIEW[interactive approve/reject]
+    INIT --> HOOK_INS[pre-commit install]
+    INIT --> GEN_CFG[generate decisiondrift.yml]
+    INIT --> GEN_CI[generate GitHub Actions workflow]
 ```
 
 ## Bootstrap Pipeline (V3)
@@ -86,30 +94,50 @@ graph TD
     subgraph engine.py
         E[scan diff or repo against rules]
         E --> D[dep scanner<br>requirements, package.json, go.mod]
-        E --> I[import scanner<br>AST import traversal]
-        E --> API[api scanner<br>AST method/function calls]
+        E --> I[import scanner<br>AST: Python + Tree-sitter JS/TS/Go/Java/Rust]
+        E --> API[api scanner<br>AST: Python + Tree-sitter JS/TS/Go/Java/Rust]
         E --> P[path scanner<br>regex match on paths]
         E --> C[config scanner<br>key-value match]
     end
+
+    CFG[decisiondrift.yml<br>rules: section] --> |CustomRuleSet| E
     
     D --> F[EnforcementFinding]
     I --> F
     API --> F
     P --> F
     C --> F
+    CR[Custom rules] --> F
     
-    F --> X[Exit code 0/1 + Report]
+    F --> X[Exit code 0/1 + ReportEnvelope]
+    X --> FM[format_output<br>text / json / sarif / markdown]
 ```
 
 ## ADR Lifecycle
 
 ```mermaid
 stateDiagram-v2
-    [*] --> proposed: bootstrap
+    [*] --> proposed: bootstrap / ingest
     proposed --> accepted: approve
     proposed --> rejected: reject
-    accepted --> deprecated: deprecate
+    accepted --> deprecated: deprecate / archive
     accepted --> superseded: supersede
+    accepted --> proposed: edit & re-propose
+    superseded --> [*]
+    deprecated --> [*]
+    rejected --> [*]
     
     note right of accepted: Only accepted ADRs<br>generate enforcement rules
+```
+
+## Output Formats
+
+```mermaid
+graph LR
+    ENV[ReportEnvelope] --> T[text: human-readable console]
+    ENV --> J[json: structured data]
+    ENV --> S[sarif: SARIF v2.1.0<br>GitHub code scanning]
+    ENV --> M[markdown: rendered report]
+    
+    S --> GA[GitHub Action<br>upload-sarif integration]
 ```

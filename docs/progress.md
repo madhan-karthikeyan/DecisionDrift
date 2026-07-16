@@ -1,13 +1,13 @@
 # DecisionDrift — Progress & Execution Plan
 
-Last updated: 2026-06-25
+Last updated: 2026-07-16
 
 ## Current Stage
 
 ```
 Feature Complete
     ↓
-Engineering Hardening ← YOU ARE HERE
+v1.0 Release Candidate ← YOU ARE HERE
     ↓
 Beta Validation
     ↓
@@ -19,16 +19,21 @@ v1.0 Release
 ## What's Been Completed
 
 ### Core Features
-- ✅ **Bootstrap V3** — fully deterministic repository scanning, evidence collection, technology detection, governance candidate generation, enforceability analysis, ADR proposal
+- ✅ **Bootstrap V3** — fully deterministic repository scanning, evidence collection, technology detection, governance candidate generation, enforceability analysis, ADR proposal (37 techs, 25 templates)
 - ✅ **Decision Capture (Ingest)** — free-text to ADR candidates via LLM extraction
-- ✅ **ADR Lifecycle** — `adr list / approve / reject`, supersession resolution, dependency tracking
+- ✅ **ADR Lifecycle** — complete: `list/show/approve/reject/deprecate/archive/supersede/edit/history/review`
 - ✅ **Rule Engine** — 5 rule types (dependency, import, API, path, config), deterministic, confidence-based severity downgrade
+- ✅ **Multi-language Import/API Scanning** — Tree-sitter for JS/TS/Go/Java/Rust imports + API calls (`pip install decisiondrift[ast]`)
+- ✅ **Custom Rule Packs** — `decisiondrift.yml` `rules:` section, merged with ADR-derived rules during enforcement
 - ✅ **Enforcement** — diff-based and full-repo modes, `--fail-on` gating, CI-ready exit codes
+- ✅ **Output Formats** — `--format text/json/sarif/markdown` + `--output <file>` on enforce command
 - ✅ **Audit** — ADR quality scoring, drift detection, stale/expired ADRs, coverage analysis
 - ✅ **Impact Analysis** — diff parsing, AST extraction (Python native + Tree-sitter multi-language)
 - ✅ **LLM Review** — semantic violation classification with confidence-gated fallback
+- ✅ **`init` Command** — one-command project setup: bootstrap → approve → hook → config → GitHub CI
+- ✅ **GitHub Action** — SARIF output, commit status checks, formal PR review (comment/request-changes/auto)
 
-### Engineering (Audit & Hardening)
+### Engineering (Hardening & v1.0 Release)
 - ✅ **Shell injection fix** in `guard --install`
 - ✅ **Symlink traversal protection** in Bootstrap V3 scanner
 - ✅ **All 5 rule types** in `_enforce_repo` — was only checking dependency+import
@@ -38,8 +43,8 @@ v1.0 Release
 - ✅ **Standardized CLI exit codes** — audit/review/adr list/bootstrap all return meaningful codes
 - ✅ **V2 dead code removal** — audit coverage now uses V3 `build_repository_model`
 - ✅ **Dependency parsing consolidation** — shared `utils/dependency_parser.py` used by both rule engine and bootstrap
-- ✅ **Dead imports and missing modules** — fixed `v3.py` importing 3 non-existent modules (`engineering_rules`, `models`, `suppressions`), added missing `BaseModel` and `Counter` imports
-- ✅ **310 tests passing** (13 skipped for tree-sitter)
+- ✅ **Dead imports and missing modules** — fixed `v3.py` importing 3 non-existent modules
+- ✅ **363 tests passing** (26 skipped for tree-sitter — requires `pip install decisiondrift[ast]`)
 
 ---
 

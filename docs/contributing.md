@@ -34,15 +34,17 @@ pytest --cov=decisiondrift --cov-report=term-missing
 ```
 src/decisiondrift/
   cli.py                     # CLI entrypoint (Click)
-  config.py                  # Config loader
+  config.py                  # Config loader (YAML + .env + custom rules)
+  models/schema.py           # Pydantic models
   bootstrap/                 # Repository scanning → ADR candidate generation
   rules/                     # Deterministic rule engine (5 rule types)
   adr/                       # ADR file management
-  adr_manager/               # adr list/approve/reject commands
+  adr_manager/               # adr lifecycle commands
   classification/            # LLM classifier
-  impact/                    # Diff parser + AST extraction
+  impact/                    # Diff parser + AST extraction (Python + Tree-sitter)
   ingest/                    # Free-text → ADR pipeline
-  report/                    # Output formatters
+  init/                      # Project initialization
+  report/                    # Output formatters (text/json/sarif/markdown)
   retrieval/                 # ADR retrieval
   review/                    # Orchestrator
   github/                    # GitHub Action adapter

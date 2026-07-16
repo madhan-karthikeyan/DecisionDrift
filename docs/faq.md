@@ -24,7 +24,23 @@ Those tools help you *write and manage* ADRs as files. DecisionDrift goes furthe
 
 ## Does it work with my language/framework?
 
-Yes for dependency/path/config rules (they work with any language). Import and API rules currently target Python AST. Tree-sitter support for JS, TS, Go, Java, Rust is available via `pip install decisiondrift[ast]`.
+Yes for dependency/path/config rules (they work with any language). Import and API rules use Python AST by default. Tree-sitter support for JS, TS, Go, Java, Rust is available via `pip install decisiondrift[ast]`.
+
+## Can I define rules without creating an ADR?
+
+Yes. Add a `rules:` section to `decisiondrift.yml` with custom rules. These are merged with ADR-derived rules during enforcement:
+
+```yaml
+rules:
+  - match: deprecated-lib
+    type: dependency
+    action: block
+    description: "Block deprecated library"
+```
+
+## What output formats are available?
+
+The `enforce` command supports `--format text|json|sarif|markdown` and `--output <file>`. SARIF output integrates with GitHub code scanning. JSON output uses the unified `ReportEnvelope` schema.
 
 ## Will it block my PR?
 
@@ -32,7 +48,15 @@ Only ADRs with `status: accepted` generate enforcement rules. Proposed candidate
 
 ## Can I run it in CI?
 
-Yes. The `enforce` command exits non-zero on violations, making it suitable for CI gating. There's also a [GitHub Action](../README.md#github-action) for PR comments.
+Yes. The `enforce` command exits non-zero on violations, making it suitable for CI gating. There's a [GitHub Action](../README.md#github-action) that posts PR comments, sets commit status checks, submits formal reviews, and generates SARIF output.
+
+## How do I set up a project from scratch?
+
+Run `decisiondrift init .` — it bootstraps ADRs, interactively prompts approval, installs pre-commit hooks, and generates configuration.
+
+## What's the full ADR lifecycle?
+
+`decisiondrift adr list/show/approve/reject/deprecate/archive/supersede/edit/history/review`. All lifecycle commands are deterministic and require no LLM.
 
 ## What happens if I have conflicting ADRs?
 
