@@ -5,6 +5,59 @@ import os
 import sys
 from pathlib import Path
 
+from decisiondrift.models.schema import ReportEnvelope
+from decisiondrift.report.formatter import format_output
+
+
+def _findings_from_enforce(result) -> list[dict]:
+    if result is None:
+        return []
+    return [
+        {
+            "adr_id": f.adr_id,
+            "adr_title": f.adr_title,
+            "rule_id": f.rule_id,
+            "rule_type": f.rule_type.value,
+            "action": f.action.value,
+            "severity": f.severity,
+            "match_value": f.match_value,
+            "file_path": f.file_path,
+            "description": f.description,
+        }
+        for f in result.findings
+    ]
+
+
+def _findings_from_lm(result) -> list[dict]:
+    if result is None:
+        return []
+    return [
+        {
+            "adr_id": f.adr_id,
+            "adr_title": f.adr_title,
+            "rule_id": f.adr_id,
+            "rule_type": "semantic",
+            "action": "block" if f.classification in ("violates", "likely_violates") else "warn",
+            "severity": f.severity,
+            "match_value": f.symbol_name,
+            "file_path": f.file_path,
+            "description": f"{f.classification}: {f.reasoning}",
+        }
+        for f in result.findings
+    ]
+
+
+def _has_blocking(enforce_result, lm_result) -> bool:
+    if enforce_result:
+        for f in enforce_result.findings:
+            if f.action.value == "block":
+                return True
+    if lm_result:
+        for f in lm_result.findings:
+            if f.classification in ("violates", "likely_violates"):
+                return True
+    return False
+
 
 def main() -> int:
     event_path = os.environ.get("GITHUB_EVENT_PATH")
@@ -23,6 +76,10 @@ def main() -> int:
     owner = (repository.get("full_name") or "").split("/")[0] if repository.get("full_name") else ""
     repo_name = (repository.get("full_name") or "").split("/")[1] if repository.get("full_name") else ""
     pr_number = pr_data.get("number")
+    head_sha = pr_data.get("head", {}).get("sha", "")
+
+    sarif_output = os.environ.get("INPUT_SARIF_OUTPUT_PATH", "")
+    review_mode = os.environ.get("INPUT_REVIEW_MODE", "comment")
 
     config = {
         "llm": {
@@ -97,6 +154,8 @@ def main() -> int:
     if lm_result and lm_result.findings:
         print(f"LLM classification: {len(lm_result.findings)} finding(s)")
 
+    all_findings = _findings_from_enforce(enforce_result) + _findings_from_lm(lm_result)
+
     body = compile_github_comment(
         lm_result,
         rule_findings=enforce_result.findings if enforce_result else [],
@@ -109,15 +168,62 @@ def main() -> int:
         print(f"Error posting comment: {e}")
         return 1
 
+    # Set commit status
+    has_blocks = _has_blocking(enforce_result, lm_result)
+    if head_sha:
+        state = "failure" if has_blocks else "success"
+        desc = f"{len(all_findings)} finding(s)" if all_findings else "Clean"
+        try:
+            client.create_status(owner, repo_name, head_sha, state, desc, "DecisionDrift Review")
+            print(f"Set commit status: {state}")
+        except Exception as e:
+            print(f"Error setting commit status: {e}")
+
+    # Generate SARIF output file
+    if sarif_output and all_findings:
+        envelope = ReportEnvelope(
+            command="enforce",
+            summary={
+                "findings_count": len(all_findings),
+                "has_blocking": has_blocks,
+                "pr_number": pr_number,
+                "files_scanned": enforce_result.files_scanned if enforce_result else 0,
+                "rules_evaluated": enforce_result.rules_evaluated if enforce_result else 0,
+            },
+            findings=all_findings,
+        )
+        sarif_text = format_output(envelope, "sarif")
+        sarif_path = Path(sarif_output)
+        sarif_path.parent.mkdir(parents=True, exist_ok=True)
+        sarif_path.write_text(sarif_text)
+        print(f"SARIF output written to {sarif_output}")
+
+    # Submit formal PR review
+    if review_mode != "comment":
+        if has_blocks and review_mode in ("request-changes", "auto"):
+            review_event = "REQUEST_CHANGES"
+            review_body = (
+                "## DecisionDrift Review — Changes Requested\n\n"
+                f"{len(all_findings)} violation(s) detected. The comment above has full details."
+            )
+        elif not has_blocks and review_mode == "auto":
+            review_event = "APPROVE"
+            review_body = "## DecisionDrift Review — No violations detected. Approved."
+        else:
+            review_event = "COMMENT"
+            review_body = body
+
+        if review_event != "COMMENT":
+            try:
+                client.submit_review(owner, repo_name, pr_number, review_body, review_event)
+                print(f"Submitted PR review: {review_event}")
+            except Exception as e:
+                print(f"Error submitting PR review: {e}")
+
     # Determine exit code
     if config["fail_on_violation"]:
-        block_count = 0
-        if enforce_result:
-            block_count += sum(1 for f in enforce_result.findings if f.action.value == "block")
-        if lm_result:
-            block_count += sum(1 for f in lm_result.findings if f.classification in ("violates", "likely_violates"))
-        if block_count:
-            print(f"FAIL_ON_VIOLATION enabled — {block_count} block(s) found.")
+        if has_blocks:
+            print(f"FAIL_ON_VIOLATION enabled — {len(all_findings)} block(s) found.")
             return 1
 
     return 0

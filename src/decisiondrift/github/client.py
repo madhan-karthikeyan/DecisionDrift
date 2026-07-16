@@ -42,3 +42,32 @@ class GitHubClient:
         resp = httpx.patch(url, headers=self.headers, json={"body": body}, timeout=30)
         resp.raise_for_status()
         return resp.json()
+
+    def create_status(self, owner: str, repo: str, sha: str, state: str, description: str, context: str, target_url: str = "") -> dict:
+        url = self._repo_api(owner, repo, f"statuses/{sha}")
+        payload: dict[str, str | None] = {
+            "state": state,
+            "description": description,
+            "context": context,
+        }
+        if target_url:
+            payload["target_url"] = target_url
+        resp = httpx.post(url, headers=self.headers, json=payload, timeout=30)
+        resp.raise_for_status()
+        return resp.json()
+
+    def submit_review(self, owner: str, repo: str, pr_number: int, body: str, event: str = "COMMENT") -> dict:
+        url = self._repo_api(owner, repo, f"pulls/{pr_number}/reviews")
+        payload = {
+            "body": body,
+            "event": event,
+        }
+        resp = httpx.post(url, headers=self.headers, json=payload, timeout=30)
+        resp.raise_for_status()
+        return resp.json()
+
+    def get_pr(self, owner: str, repo: str, pr_number: int) -> dict:
+        url = self._repo_api(owner, repo, f"pulls/{pr_number}")
+        resp = httpx.get(url, headers=self.headers, timeout=30)
+        resp.raise_for_status()
+        return resp.json()

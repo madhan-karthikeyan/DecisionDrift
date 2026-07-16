@@ -40,6 +40,14 @@ inputs:
     description: 'Maximum wall-clock time for the review in seconds.'
     required: false
     default: '300'
+  sarif-output-path:
+    description: 'Path to write SARIF output file. Leave empty to skip SARIF generation. Example: results/decisiondrift.sarif'
+    required: false
+    default: ''
+  review-mode:
+    description: 'PR review submission mode. "comment" (default, just post a comment), "request-changes" (always request changes on violations), "auto" (approve on clean, request changes on violations).'
+    required: false
+    default: 'comment'
 
 runs:
   using: 'docker'
