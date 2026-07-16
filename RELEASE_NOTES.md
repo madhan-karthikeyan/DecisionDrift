@@ -1,3 +1,47 @@
+# v1.1.0 — Multi-language Architecture Governance
+
+## Highlights
+
+- **7 new languages** with full tree-sitter AST extraction: Ruby, PHP, C#, Kotlin, Swift, C, C++
+- **6 new dependency file parsers**: Gemfile, Gemfile.lock, composer.json, .csproj, Package.swift, build.gradle.kts
+- **15 new technology profiles** in the bootstrap registry for Ruby/Rails, PHP/Laravel, C#/ASP.NET Core, Swift/Vapor, Kotlin/Ktor
+- **Language registry** — single source of truth (`LANGUAGE_REGISTRY`) replaces duplicated lang_map + TS_LANG_EXTENSIONS
+- **Per-language query modules** — query files in `treesitter_queries/` make adding the 8th language a single file
+- **Embedding backend** — `fastembed`-powered semantic retrieval cascades after keyword search
+- **Stable JSON schema** — documented and versioned `schema_version: 1` in every JSON output
+- **376 tests passing** (+13 new integration tests for all new languages)
+
+## What's New
+
+| Change | Details |
+|--------|---------|
+| Language registry | `impact/language_registry.py` — one dict maps extensions → grammar → dep files |
+| Per-language queries | `impact/treesitter_queries/*.py` — each exports `symbols_query()`, `imports_query()`, `api_calls_query()` |
+| 7 new languages | Ruby, PHP, C#, Kotlin, Swift, C, C++ — tree-sitter AST for imports, symbols, API calls |
+| 6 new dep parsers | Gemfile, composer.json, .csproj, Package.swift, build.gradle.kts — plus Gemfile.lock |
+| 15 new tech profiles | Rails, RSpec, Laravel, PHPUnit, ASP.NET Core, xUnit, Vapor, XCTest, Ktor, Kotest + language entries |
+| Embedding backend | `EmbeddingBackend(RetrievalBackend)` — cosine similarity against cached ADR embeddings |
+| Embedding cascade | review pipeline: keyword → embedding → LLM |
+| JSON schema docs | `docs/json-schema-v1.md` + `docs/report-schema-v1.json` |
+| Deduplication | `TS_LANG_EXTENSIONS` in `engine.py` now imports from `scanner.py` |
+| Suffix-based dispatch | `*.csproj` glob files supported alongside exact-name dep files |
+
+## Installation
+
+```bash
+pip install decisiondrift
+# or
+pipx install decisiondrift
+```
+
+## What's Next
+
+- Embedding-enhanced bootstrap and enforce pipelines
+- VS Code extension (after CLI API stabilizes)
+- Editor diagnostics via stable JSON schema contract
+
+---
+
 # v1.0.0-beta.4 — HTML Output, Shared HTTP Registry, README Rewrite
 
 ## Highlights
