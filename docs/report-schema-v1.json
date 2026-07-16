@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://decisiondrift.ai/schemas/report-v1.json",
+  "title": "DecisionDrift Report",
+  "description": "Schema for DecisionDrift CLI output (enforce, audit, init, bootstrap)",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema revision — changes only on breaking changes"
+    },
+    "command": {
+      "type": "string",
+      "enum": ["enforce", "audit", "bootstrap", "init"],
+      "description": "CLI command that generated this report"
+    },
+    "tool_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+",
+      "description": "DecisionDrift semver"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp"
+    },
+    "duration_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Execution time in milliseconds"
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "status": { "type": "string" },
+        "findings_count": { "type": "integer" },
+        "rules_evaluated": { "type": "integer" },
+        "files_scanned": { "type": "integer" },
+        "exit_code": { "type": "integer" }
+      },
+      "required": ["status"],
+      "description": "Aggregate counts and exit status"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "adr_id": { "type": "string" },
+          "adr_title": { "type": "string" },
+          "rule_id": { "type": "string" },
+          "rule_type": {
+            "type": "string",
+            "enum": ["dependency", "import", "path", "api", "config"]
+          },
+          "action": {
+            "type": "string",
+            "enum": ["block", "warn", "require_approval", "info"]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low"]
+          },
+          "match_value": { "type": "string" },
+          "file_path": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      },
+      "description": "Individual finding objects"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Command-specific context"
+    }
+  },
+  "required": [
+    "schema_version",
+    "command",
+    "tool_version",
+    "timestamp",
+    "summary",
+    "findings"
+  ]
+}
