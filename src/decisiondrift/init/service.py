@@ -15,6 +15,20 @@ llm:
   base_url: null  # Use for Ollama, Groq, etc.
 
 adr_dir: docs/adr
+
+# Custom rule packs — additional rules beyond those generated from ADRs.
+# Rules are combined with ADR-derived rules during enforcement.
+# Supported types: dependency, import, path, api, config
+# Supported actions: block, require_approval, warn, info
+# rules:
+#   - match: deprecated-library
+#     type: dependency
+#     action: block
+#     description: "Block usage of deprecated library"
+#   - match: old_module
+#     type: import
+#     action: warn
+#     description: "Warn on imports from old_module"
 """
 
 CI_GITHUB_TEMPLATE = """name: DecisionDrift Governance

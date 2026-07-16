@@ -56,13 +56,16 @@ def enforce_from_adrs(
     adrs: list[DecisionRecord],
     repo_path: str | Path = ".",
     diff_text: str | None = None,
+    custom_rules: RuleSet | None = None,
 ) -> EnforcementResult:
-    """Convenience: convert ADRs to rules, then enforce."""
+    """Convenience: convert ADRs to rules, optionally add custom rules, then enforce."""
     from decisiondrift.adr.rule_generator import _rules_for_adr
 
     all_rules: list[Rule] = []
     for adr in adrs:
         all_rules.extend(_rules_for_adr(adr))
+    if custom_rules:
+        all_rules.extend(custom_rules.rules)
     return enforce(RuleSet(rules=all_rules), repo_path=repo_path, diff_text=diff_text)
 
 

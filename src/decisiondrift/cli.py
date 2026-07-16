@@ -431,6 +431,7 @@ def enforce(diff_file: str | None, repo: str, adr_dir: str | None, from_git: boo
     """
     from decisiondrift.adr.loader import load_adrs
     from decisiondrift.adr.supersession import resolve_active
+    from decisiondrift.config import load_config, load_custom_rules
     from decisiondrift.models.schema import ReportEnvelope
     from decisiondrift.report.formatter import format_output
     from decisiondrift.rules.engine import enforce_from_adrs
@@ -443,7 +444,10 @@ def enforce(diff_file: str | None, repo: str, adr_dir: str | None, from_git: boo
     try:
         decisions = load_adrs(str(resolved_adr_dir), status_filter={"accepted"})
         active = resolve_active(decisions)
-        if not active:
+
+        custom_rules = load_custom_rules()
+
+        if not active and not custom_rules.rules:
             env = ReportEnvelope(
                 command="enforce",
                 summary={
@@ -454,7 +458,7 @@ def enforce(diff_file: str | None, repo: str, adr_dir: str | None, from_git: boo
             _emit_output(format_output(env, output_format), output_file)
             return
 
-        result = enforce_from_adrs(active, repo_path=repo, diff_text=diff_text)
+        result = enforce_from_adrs(active, repo_path=repo, diff_text=diff_text, custom_rules=custom_rules)
 
         severity_order = {"block": 0, "require_approval": 1, "warn": 2, "info": 3}
         fail_level = severity_order.get(fail_on, 0)

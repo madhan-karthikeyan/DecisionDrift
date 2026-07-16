@@ -319,3 +319,53 @@ class TestEnforceFromADRs:
         (tmp_path / "app.py").write_text("import flask\nimport django\n")
         result = enforce_from_adrs([approved_adr], repo_path=str(tmp_path))
         assert len(result.findings) >= 2
+
+    def test_load_custom_rules_from_dict(self):
+        from decisiondrift.config import load_custom_rules
+
+        config = {
+            "rules": [
+                {"match": "bad-lib", "type": "dependency", "action": "block", "description": "Block bad-lib"},
+                {"match": "evil", "type": "import", "action": "warn", "description": "Warn on evil imports"},
+            ]
+        }
+        ruleset = load_custom_rules(config)
+        assert len(ruleset.rules) == 2
+        assert ruleset.rules[0].match == "bad-lib"
+        assert ruleset.rules[0].action.value == "block"
+        assert ruleset.rules[1].type.value == "import"
+
+    def test_load_custom_rules_empty(self):
+        from decisiondrift.config import load_custom_rules
+
+        ruleset = load_custom_rules({"rules": []})
+        assert len(ruleset.rules) == 0
+
+    def test_load_custom_rules_defaults(self):
+        from decisiondrift.config import load_custom_rules
+
+        ruleset = load_custom_rules({})
+        assert len(ruleset.rules) == 0
+
+    def test_custom_rules_combined_with_adr_rules(self, tmp_path: Path, approved_adr: DecisionRecord):
+        from decisiondrift.config import load_custom_rules
+        from decisiondrift.rules.models import Action, Rule, RuleSet, RuleType
+
+        custom = RuleSet(
+            rules=[
+                Rule(
+                    id="custom-1",
+                    type=RuleType.DEPENDENCY,
+                    match="pypopular",
+                    action=Action.WARN,
+                    source_adr="custom-rule",
+                    description="Custom block rule",
+                ),
+            ]
+        )
+        (tmp_path / "requirements.txt").write_text("flask==3.0\npypopular==1.0\n")
+        diff = "diff --git a/requirements.txt b/requirements.txt\n--- /dev/null\n+++ b/requirements.txt\n@@ -0,0 +1,2 @@\n+flask==3.0\n+pypopular==1.0\n"
+        result = enforce_from_adrs([approved_adr], repo_path=str(tmp_path), diff_text=diff, custom_rules=custom)
+        custom_findings = [f for f in result.findings if f.rule_id == "custom-1"]
+        assert len(custom_findings) == 1
+        assert "pypopular" in custom_findings[0].match_value
