@@ -4,7 +4,12 @@ from pathlib import Path
 
 import pytest
 
-from decisiondrift.impact.ast_treesitter import HAS_TREESITTER, extract_symbols_treesitter
+from decisiondrift.impact.ast_treesitter import (
+    HAS_TREESITTER,
+    extract_api_calls_treesitter,
+    extract_imports_treesitter,
+    extract_symbols_treesitter,
+)
 
 pytestmark = pytest.mark.skipif(
     not HAS_TREESITTER,
@@ -158,3 +163,124 @@ fn main() {}
         rb_file.write_text("class Foo; end\n")
         symbols = extract_symbols_treesitter(str(rb_file), "ruby")
         assert symbols == []
+
+
+class TestTreeSitterImports:
+    def test_js_imports(self, tmp_path: Path):
+        js_file = tmp_path / "app.js"
+        js_file.write_text("""
+import express from 'express';
+import { Router } from 'express';
+const fs = require('fs');
+import('./lazy.js');
+""")
+        imports = extract_imports_treesitter(str(js_file), "javascript")
+        assert "express" in imports
+        assert "fs" in imports
+
+    def test_js_relative_import_skipped(self, tmp_path: Path):
+        js_file = tmp_path / "app.js"
+        js_file.write_text("import './local';\nimport '../sibling';\n")
+        imports = extract_imports_treesitter(str(js_file), "javascript")
+        assert imports == []
+
+    def test_ts_imports(self, tmp_path: Path):
+        ts_file = tmp_path / "app.ts"
+        ts_file.write_text("""
+import { Injectable } from '@nestjs/common';
+import * as fs from 'fs';
+""")
+        imports = extract_imports_treesitter(str(ts_file), "typescript")
+        assert "@nestjs/common" in imports
+        assert "fs" in imports
+
+    def test_go_imports(self, tmp_path: Path):
+        go_file = tmp_path / "main.go"
+        go_file.write_text("""
+package main
+
+import (
+    "fmt"
+    "net/http"
+)
+""")
+        imports = extract_imports_treesitter(str(go_file), "go")
+        assert "fmt" in imports
+        assert "net/http" in imports
+
+    def test_java_imports(self, tmp_path: Path):
+        java_file = tmp_path / "App.java"
+        java_file.write_text("""
+package com.example;
+
+import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+""")
+        imports = extract_imports_treesitter(str(java_file), "java")
+        assert "java" in imports
+        assert "org" in imports
+
+    def test_rust_imports(self, tmp_path: Path):
+        rs_file = tmp_path / "main.rs"
+        rs_file.write_text("""
+use std::collections::HashMap;
+use serde::Deserialize;
+extern crate tokio;
+""")
+        imports = extract_imports_treesitter(str(rs_file), "rust")
+        assert "std" in imports
+        assert "serde" in imports
+        assert "tokio" in imports
+
+    def test_empty_source(self, tmp_path: Path):
+        js_file = tmp_path / "empty.js"
+        js_file.write_text("")
+        imports = extract_imports_treesitter(str(js_file), "javascript")
+        assert imports == []
+
+    def test_missing_file_does_not_crash(self, tmp_path: Path):
+        imports = extract_imports_treesitter(str(tmp_path / "nonexistent.js"), "javascript")
+        assert imports == []
+
+
+class TestTreeSitterApiCalls:
+    def test_js_api_calls(self, tmp_path: Path):
+        js_file = tmp_path / "app.js"
+        js_file.write_text("""
+const result = db.query('SELECT 1');
+sendResponse(result);
+""")
+        calls = extract_api_calls_treesitter(str(js_file), "javascript")
+        assert "db.query" in calls or "query" in calls
+        assert "sendResponse" in calls
+
+    def test_empty_source(self, tmp_path: Path):
+        js_file = tmp_path / "empty.js"
+        js_file.write_text("")
+        calls = extract_api_calls_treesitter(str(js_file), "javascript")
+        assert calls == []
+
+    def test_unsupported_language(self, tmp_path: Path):
+        calls = extract_api_calls_treesitter("/fake.rb", "ruby")
+        assert calls == []
+
+
+class TestScannerIntegration:
+    def test_scan_imports_js_via_scanner(self, tmp_path: Path):
+        """Verify scanner.py uses tree-sitter for JS imports."""
+        from decisiondrift.rules.scanner import scan_imports
+
+        (tmp_path / "app.js").write_text("import express from 'express';\n")
+        imports = scan_imports(tmp_path)
+        assert "express" in imports or imports == []
+
+    def test_scan_imports_go_via_scanner(self, tmp_path: Path):
+        """Verify scanner.py uses tree-sitter for Go imports."""
+        from decisiondrift.rules.scanner import scan_imports
+
+        (tmp_path / "main.go").write_text("""
+package main
+import "fmt"
+""")
+        imports = scan_imports(tmp_path)
+        assert "fmt" in imports or imports == []

@@ -4,6 +4,7 @@ import ast
 import re
 from pathlib import Path
 
+from decisiondrift.impact.ast_treesitter import HAS_TREESITTER, extract_imports_treesitter
 from decisiondrift.impact.diff_parser import parse_diff
 from decisiondrift.models.schema import DecisionRecord
 from decisiondrift.rules.models import (
@@ -25,6 +26,16 @@ from decisiondrift.utils.dependency_parser import (
     parse_pyproject_toml,
     parse_requirements_txt,
 )
+
+TS_LANG_EXTENSIONS: dict[str, str] = {
+    ".js": "javascript",
+    ".ts": "typescript",
+    ".tsx": "tsx",
+    ".jsx": "javascript",
+    ".go": "go",
+    ".java": "java",
+    ".rs": "rust",
+}
 
 
 def enforce(
@@ -97,14 +108,12 @@ def _enforce_diff(
             if re.search(rule.match, f.path):
                 findings.append(_to_finding(rule, f.path, f.path))
 
-    # API rules: check function calls in AST of changed Python files
+    # API rules: check function calls in changed files
     for rule in api_rules:
         rules_evaluated += 1
         for f in files:
-            if f.language != "python":
-                continue
             file_path = repo / f.path
-            calls = _scan_api_calls(file_path)
+            calls = _scan_api_calls(file_path, f.language)
             for call in calls:
                 if rule.match in call:
                     findings.append(_to_finding(rule, call, f.path))
@@ -168,19 +177,23 @@ def _enforce_repo(
             if re.search(rule.match, rel):
                 findings.append(_to_finding(rule, rel, rel))
 
-    # API rules: check function calls in all Python files
+    # API rules: check function calls in all source files
     for rule in api_rules:
         rules_evaluated += 1
         for f in all_files:
-            if f.suffix.lower() != ".py":
+            ext = f.suffix.lower()
+            lang = "python" if ext == ".py" else TS_LANG_EXTENSIONS.get(ext)
+            if lang is None:
                 continue
-            calls = _scan_api_calls(f)
+            if ext != ".py" and not HAS_TREESITTER:
+                continue
+            try:
+                rel = str(f.relative_to(repo))
+            except ValueError:
+                rel = f.name
+            calls = _scan_api_calls(f, lang)
             for call in calls:
                 if rule.match in call:
-                    try:
-                        rel = str(f.relative_to(repo))
-                    except ValueError:
-                        rel = f.name
                     findings.append(_to_finding(rule, call, rel))
 
     # Config rules: check config files for key-value patterns
@@ -253,55 +266,73 @@ def _extract_deps_from_file(path: Path) -> list[str]:
 
 
 def _scan_imports_in_diff(files, repo: Path) -> list[tuple[str, str]]:
-    """Scan changed Python files for imports."""
+    """Scan changed files for imports.
+    Uses Python AST for .py files, tree-sitter for other supported languages."""
     imports: list[tuple[str, str]] = []
     for f in files:
-        if f.language != "python":
-            continue
         file_path = repo / f.path
         if not file_path.exists():
             continue
-        try:
-            tree = ast.parse(file_path.read_text(encoding="utf-8", errors="replace"))
-        except (SyntaxError, OSError):
-            continue
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    top = alias.name.split(".")[0].lower()
-                    if top:
-                        imports.append((top, f.path))
-            elif isinstance(node, ast.ImportFrom):
-                if node.module:
-                    top = node.module.split(".")[0].lower()
-                    if top:
-                        imports.append((top, f.path))
+
+        ext = file_path.suffix.lower()
+
+        if ext == ".py":
+            try:
+                tree = ast.parse(file_path.read_text(encoding="utf-8", errors="replace"))
+            except (SyntaxError, OSError):
+                continue
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    for alias in node.names:
+                        top = alias.name.split(".")[0].lower()
+                        if top:
+                            imports.append((top, f.path))
+                elif isinstance(node, ast.ImportFrom):
+                    if node.module:
+                        top = node.module.split(".")[0].lower()
+                        if top:
+                            imports.append((top, f.path))
+        elif ext in TS_LANG_EXTENSIONS and HAS_TREESITTER:
+            lang = TS_LANG_EXTENSIONS[ext]
+            file_imports = extract_imports_treesitter(str(file_path), lang)
+            for imp in file_imports:
+                imports.append((imp.lower(), f.path))
+
     return imports
 
 
-def _scan_api_calls(file_path: Path) -> list[str]:
-    """Scan a Python file for function/method call names."""
+def _scan_api_calls(file_path: Path, language: str = "python") -> list[str]:
+    """Scan a source file for function/method call names.
+    Uses Python AST for .py files, tree-sitter for other supported languages."""
     if not file_path.exists():
         return []
-    try:
-        tree = ast.parse(file_path.read_text(encoding="utf-8", errors="replace"))
-    except (SyntaxError, OSError):
-        return []
-    calls: list[str] = []
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Call):
-            if isinstance(node.func, ast.Attribute):
-                parts = []
-                n = node.func
-                while isinstance(n, ast.Attribute):
-                    parts.append(n.attr)
-                    n = n.value
-                if isinstance(n, ast.Name):
-                    parts.append(n.id)
-                calls.append(".".join(reversed(parts)))
-            elif isinstance(node.func, ast.Name):
-                calls.append(node.func.id)
-    return calls
+
+    if language == "python":
+        try:
+            tree = ast.parse(file_path.read_text(encoding="utf-8", errors="replace"))
+        except (SyntaxError, OSError):
+            return []
+        calls: list[str] = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                if isinstance(node.func, ast.Attribute):
+                    parts = []
+                    n = node.func
+                    while isinstance(n, ast.Attribute):
+                        parts.append(n.attr)
+                        n = n.value
+                    if isinstance(n, ast.Name):
+                        parts.append(n.id)
+                    calls.append(".".join(reversed(parts)))
+                elif isinstance(node.func, ast.Name):
+                    calls.append(node.func.id)
+        return calls
+
+    if HAS_TREESITTER:
+        from decisiondrift.impact.ast_treesitter import extract_api_calls_treesitter
+        return extract_api_calls_treesitter(str(file_path), language)
+
+    return []
 
 
 def _is_config_file(path: str) -> bool:

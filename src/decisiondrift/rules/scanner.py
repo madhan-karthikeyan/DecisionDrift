@@ -4,6 +4,7 @@ import ast
 from pathlib import Path
 from typing import Any
 
+from decisiondrift.impact.ast_treesitter import HAS_TREESITTER, extract_imports_treesitter
 from decisiondrift.rules.models import Rule, RuleMatch, RuleType
 from decisiondrift.utils.dependency_parser import (
     parse_cargo_toml,
@@ -112,31 +113,56 @@ def _find_dep_file_containing(repo: Path, match: str) -> str | None:
     return None
 
 
+TS_LANG_EXTENSIONS: dict[str, str] = {
+    ".js": "javascript",
+    ".ts": "typescript",
+    ".tsx": "tsx",
+    ".jsx": "javascript",
+    ".go": "go",
+    ".java": "java",
+    ".rs": "rust",
+}
+
+
 def scan_imports(repo_path: str | Path) -> list[str]:
-    """Scan all Python files in the repo and collect imported module names."""
+    """Scan all source files in the repo and collect imported module names.
+    Uses Python AST for .py files, tree-sitter for other supported languages."""
     repo = Path(repo_path)
     imports: set[str] = set()
-    for py_file in repo.rglob("*.py"):
+
+    for source_file in repo.rglob("*"):
+        if not source_file.is_file():
+            continue
         if any(
-            p.startswith(".") or p in ("__pycache__", "venv", ".venv", "node_modules", ".git")
-            for p in py_file.relative_to(repo).parts
+            p.startswith(".") or p in EXCLUDED_DIRS
+            for p in source_file.relative_to(repo).parts
         ):
             continue
-        try:
-            tree = ast.parse(py_file.read_text(encoding="utf-8", errors="replace"))
-        except (SyntaxError, OSError):
-            continue
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    top = alias.name.split(".")[0]
-                    if top:
-                        imports.add(top.lower())
-            elif isinstance(node, ast.ImportFrom):
-                if node.module:
-                    top = node.module.split(".")[0]
-                    if top:
-                        imports.add(top.lower())
+
+        ext = source_file.suffix.lower()
+
+        if ext == ".py":
+            try:
+                tree = ast.parse(source_file.read_text(encoding="utf-8", errors="replace"))
+            except (SyntaxError, OSError):
+                continue
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    for alias in node.names:
+                        top = alias.name.split(".")[0]
+                        if top:
+                            imports.add(top.lower())
+                elif isinstance(node, ast.ImportFrom):
+                    if node.module:
+                        top = node.module.split(".")[0]
+                        if top:
+                            imports.add(top.lower())
+        elif ext in TS_LANG_EXTENSIONS and HAS_TREESITTER:
+            lang = TS_LANG_EXTENSIONS[ext]
+            file_imports = extract_imports_treesitter(str(source_file), lang)
+            for imp in file_imports:
+                imports.add(imp.lower())
+
     return sorted(imports)
 
 
