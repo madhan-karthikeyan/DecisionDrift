@@ -48,6 +48,57 @@ decisiondrift enforce --from-git
 | A decision needs updating | `adr edit` opens it in your editor, `adr history` shows the change log |
 | You want one-command setup | `decisiondrift init .` bootstraps, approves, hooks, configures everything |
 
+## Workflow
+<pre>
+                      ┌──────────────┐
+                    │ decisiondrift│
+                    │     init     │
+                    └──────┬───────┘
+                           │
+         ┌─────────────────┴─────────────────┐
+         │                                   │
+         ▼                                   ▼
+  bootstrap                           guard --install
+         │                                   │
+         ▼                                   ▼
+ Generate ADRs                     Install Git Hook
+         │                                   │
+         ▼                                   │
+Human approves/rejects                       │
+         │                                   │
+         ▼                                   │
+ Accepted ADRs ◄─────────────────────────────┘
+         │
+         ▼
+ Rule Generator
+         │
+         ▼
+     enforce
+         │
+ ┌───────┴────────┐
+ │                │
+ ▼                ▼
+git commit     GitHub Action
+ │                │
+ ▼                ▼
+Pass/Fail     Pass/Fail + PR Comment
+                  │
+                  ▼
+           Branch Protection
+                  │
+                  ▼
+            Merge Allowed/Blocked
+
+Separate utilities:
+────────────────────────────────────────
+review  → semantic LLM analysis
+audit   → repository health
+impact  → changed ADR analysis
+doctor  → diagnostics
+ingest  → ADR generation from documents
+adr     → ADR lifecycle management
+</pre>
+
 ## Where to go next
 
 | Resource | What you'll find |
