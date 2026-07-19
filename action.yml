@@ -52,4 +52,4 @@ inputs:
 runs:
   using: 'docker'
   image: 'Dockerfile'
-  entrypoint: ['python', '-m', 'decisiondrift.github.action_entrypoint']
+  entrypoint: 'python -m decisiondrift.github.action_entrypoint'
