@@ -54,7 +54,7 @@
     },
     "viewsContainers": {
       "activitybar": [
-        { "id": "decisiondrift", "title": "DecisionDrift" }
+        { "id": "decisiondrift", "title": "DecisionDrift", "icon": "icon.svg" }
       ]
     },
     "views": {
